@@ -4,11 +4,11 @@ import { faMicrophone } from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from "react-router-dom";
 
 const Dashboard: React.FC = () => {
-   const nav = useNavigate();
-  
+  const nav = useNavigate();
+
   // Mock user data (replace with actual localStorage in your app)
   const user = useMemo(() => ({ email: "doctor@voice2vitals.com" }), []);
-  
+
   // Mock patients data with more realistic entries
   const [patients] = useState([
     { firstName: "John", lastName: "Smith", id: 1, lastSession: "2024-01-15" },
@@ -84,7 +84,7 @@ const Dashboard: React.FC = () => {
               margin: '2px 0 0 0',
               fontWeight: '500'
             }}>
-              Welcome back, {user?.email}
+              From doctor-patient conversations to organized clinical notes.
             </p>
           </div>
           <button
@@ -124,6 +124,15 @@ const Dashboard: React.FC = () => {
         display: 'flex',
         flexDirection: 'column'
       }}>
+
+        <h3 style={{
+          color: '#718096',
+          // fontSize: isMobile ? '12px' : '14px',
+          margin: '2px 0 0 0',
+          // fontWeight: '500'
+        }}>
+          Welcome back, {user?.email}
+        </h3>
         {/* Dashboard Title */}
         <div style={{ marginBottom: isMobile ? '24px' : '32px' }}>
           <h2 style={{
@@ -139,7 +148,7 @@ const Dashboard: React.FC = () => {
             fontSize: isMobile ? '14px' : '16px',
             margin: '0'
           }}>
-            Manage your patients and voice analysis sessions
+            Manage patient records and track consultation sessions
           </p>
         </div>
 
@@ -231,13 +240,23 @@ const Dashboard: React.FC = () => {
                       e.currentTarget.style.backgroundColor = index % 2 === 0 ? 'rgba(248, 250, 252, 0.3)' : 'transparent';
                     }}
                   >
-                    <div style={{ flex: 1 }}>
+                    <div style={{ flex: 1, cursor: 'pointer' }} onClick={() => nav(`/clinical-notes/${patient.id}`)}>
                       <h4 style={{
                         fontSize: isMobile ? '14px' : '16px',
                         fontWeight: '600',
-                        color: '#2d3748',
-                        margin: '0 0 4px 0'
-                      }}>
+                        color: '#3fb6a8',
+                        margin: '0 0 4px 0',
+                        cursor: 'pointer',
+                        textDecoration: 'underline',
+                        transition: 'color 0.2s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.color = '#319795';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.color = '#3fb6a8';
+                      }}
+                      >
                         {patient.firstName} {patient.lastName}
                       </h4>
                       <p style={{
@@ -249,7 +268,10 @@ const Dashboard: React.FC = () => {
                       </p>
                     </div>
                     <button
-                      onClick={() => recordSession(`${patient.firstName} ${patient.lastName}`)}
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent triggering the parent div's click
+                        recordSession(`${patient.firstName} ${patient.lastName}`);
+                      }}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -275,7 +297,7 @@ const Dashboard: React.FC = () => {
                       title={`Record session for ${patient.firstName} ${patient.lastName}`}
                     >
                       {/* Mic Icon */}
-                       <FontAwesomeIcon icon={faMicrophone} />
+                      <FontAwesomeIcon icon={faMicrophone} />
                     </button>
                   </div>
                 ))}
@@ -315,18 +337,18 @@ const Dashboard: React.FC = () => {
           }}
         >
           {/* Plus Icon */}
-          <svg 
-            width="20" 
-            height="20" 
-            viewBox="0 0 24 24" 
-            fill="none" 
-            stroke="currentColor" 
-            strokeWidth="2.5" 
-            strokeLinecap="round" 
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
             strokeLinejoin="round"
           >
-            <line x1="12" y1="5" x2="12" y2="19"/>
-            <line x1="5" y1="12" x2="19" y2="12"/>
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
           Register New Patient
         </button>

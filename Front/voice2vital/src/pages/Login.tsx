@@ -109,7 +109,7 @@ const Login: React.FC = () => {
             margin: '0',
             fontWeight: '500'
           }}>
-            Healthcare insights through voice analysis
+            From doctor-patient conversations to organized clinical notes.
           </p>
         </div>
 

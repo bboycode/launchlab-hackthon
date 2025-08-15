@@ -120,7 +120,7 @@ const DoctorRegistration: React.FC = () => {
             margin: '0 0 24px 0',
             lineHeight: '1.5'
           }}>
-            Your doctor account has been created successfully. You will be redirected to the login page shortly.
+            Your account has been created successfully. You will be redirected to the login page shortly.
           </p>
           
           <div style={{
@@ -190,7 +190,7 @@ const DoctorRegistration: React.FC = () => {
               margin: '2px 0 0 0',
               fontWeight: '500'
             }}>
-              Healthcare insights through voice analysis
+              From doctor-patient conversations to organized clinical notes.
             </p>
           </div>
           <button

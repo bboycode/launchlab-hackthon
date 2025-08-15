@@ -4,6 +4,7 @@ import DoctorRegistration from "./pages/DoctorRegistration";
 import PatientRegistration from "./pages/PatientRegistration";
 import Dashboard from "./pages/Dashboard";
 import SessionRecorder from "./pages/SessionRecorder";
+import ClinicalNotes from "./pages/ClinicalNotes";
 import "./App.css";
 
 export default function App() {
@@ -15,6 +16,7 @@ export default function App() {
         <Link to="/patient-register">New Patient</Link>
         <Link to="/dashboard">Dashboard</Link>
         <Link to="/session">Session Recorder</Link>
+        <Link to="/clinical-notes/1">Clinical Notes</Link>
       </nav> */}
 
       <Routes>
@@ -23,6 +25,7 @@ export default function App() {
         <Route path="/patient-register" element={<PatientRegistration />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/session" element={<SessionRecorder />} />
+        <Route path="/clinical-notes/:patientId" element={<ClinicalNotes />} />
       </Routes>
     </BrowserRouter>
   );
