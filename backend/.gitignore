@@ -6,3 +6,5 @@
 *.txt
 *.sh
 */.env
+.env
+venv/
