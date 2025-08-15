@@ -156,7 +156,7 @@ const SessionRecorder: React.FC = () => {
                 margin: '2px 0 0 0',
                 fontWeight: '500'
               }}>
-                Voice Recording Session
+                From doctor-patient conversations to organized clinical notes.
               </p>
             </div>
           </div>
@@ -175,6 +175,15 @@ const SessionRecorder: React.FC = () => {
         minHeight: 'calc(100vh - 84px)',
         textAlign: 'center'
       }}>
+
+        <h2 style={{
+              fontSize: isMobile ? '24px' : '28px',
+              fontWeight: '600',
+              color: '#2d3748',
+              margin: '0 0 50px 0'
+            }}>
+              Voice Recording Session
+            </h2>
 
         {/* Countdown Display */}
         {countdown > 0 && (

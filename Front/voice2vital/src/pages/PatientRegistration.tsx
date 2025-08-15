@@ -137,7 +137,7 @@ const PatientRegistration: React.FC = () => {
                 margin: '2px 0 0 0',
                 fontWeight: '500'
               }}>
-                Patient Registration
+                From doctor-patient conversations to organized clinical notes.
               </p>
             </div>
           </div>
