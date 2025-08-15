@@ -9,13 +9,13 @@ import "./App.css";
 export default function App() {
   return (
     <BrowserRouter>
-      <nav style={{ display: "flex", gap: 12, padding: 12, borderBottom: "1px solid #eee" }}>
+      {/* <nav style={{ display: "flex", gap: 12, padding: 12, borderBottom: "1px solid #eee" }}>
         <Link to="/">Login</Link>
         <Link to="/doctor-register">Doctor Registration</Link>
         <Link to="/patient-register">New Patient</Link>
         <Link to="/dashboard">Dashboard</Link>
         <Link to="/session">Session Recorder</Link>
-      </nav>
+      </nav> */}
 
       <Routes>
         <Route path="/" element={<Login />} />
