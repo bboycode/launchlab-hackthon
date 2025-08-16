@@ -8,3 +8,4 @@ venv/
 *.txt
 *.sh
 */.env
+stt/__pycache__
