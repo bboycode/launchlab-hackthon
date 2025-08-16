@@ -77,7 +77,7 @@ const ChatBox: React.FC = () => {
 
         try {
             // Make API call to backend
-            const response = await fetch('/chat/query', {
+            const response = await fetch('http://127.0.0.1:5000/chat/query', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
