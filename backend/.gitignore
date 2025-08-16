@@ -7,5 +7,4 @@ venv/
 */uv.lock
 *.txt
 *.sh
-.env
 stt/__pycache__
