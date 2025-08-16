@@ -7,7 +7,7 @@ import os
 
 from utils import *
 from refine import refine_transcript
-from processing import extract_clinical_note, print_note
+from processing import ClinicalNote, extract_clinical_note, print_note
 
 load_dotenv()
 token = os.getenv('REV_AI_TOKEN')
@@ -55,7 +55,7 @@ def get_transcript_json(job_id):
 def submit_clinical_json(transcript_json):
     """Submit the transcript JSON to Gemini for processing;"""
 
-async def transcribe(file_path):
+async def transcribe(file_path) -> ClinicalNote:
     """Main function to handle the transcription process."""
     print(f"Starting transcription for file: {file_path}")
 

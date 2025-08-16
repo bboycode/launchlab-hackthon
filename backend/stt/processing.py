@@ -66,25 +66,37 @@ def build_prompt(transcript: str) -> str:
 You are a medical scribe. Extract structured data from the transcript and return valid JSON strictly following the ClinicalNote schema.  
 
 Instructions:
-1. Patient Information: Always include the patient's **sex** in `patient_info`.  
+You are a medical scribe. From the transcript, return valid JSON matching the ClinicalNoteFull schema exactly.
+Rules:
+1. Fill every field, either from explicit info or by logical derivation (e.g., calculate age from DOB and clinic date).
+
+2. If a value is missing, use "Not stated" for strings and [] for lists.
+
+3. Use full, exact clinical wording from the transcript.
+
+4. Do not skip any field.
+
+5. Output JSON only.
+
+6. Patient Information: Always include the patient's **sex** in `patient_info`.  
    - If stated, record exactly as given.  
    - If not stated, infer logically if possible (e.g., from pronouns or names). Otherwise, set to "Not stated".  
 
-2. Plan Section: The `plan` field must contain **clear, actionable medical suggestions**, not generic text.  
+7. Plan Section: The `plan` field must contain **clear, actionable medical suggestions**, not generic text.  
    - Include medications with names and dosages (if mentioned).  
    - Record diagnostic tests, referrals, or imaging orders.  
    - Add lifestyle or home-care recommendations if stated.  
    - Always include follow-up instructions if given.  
 
-3. Accuracy:  
+8. Accuracy:  
    - Preserve all clinical details exactly as stated in the transcript.  
    - Do not paraphrase or omit diagnoses, medications, or plans.  
 
-4. Completeness:  
+9. Completeness:  
    - Every field in the schema must be present.  
    - Use `"Not stated"` for missing string fields and `[]` for missing list fields.  
 
-5. Output:  
+10. Output:  
    - Return **only valid JSON** that conforms to the schema.  
    - Do not include explanations, notes, or extra text outside the JSON.  
 
