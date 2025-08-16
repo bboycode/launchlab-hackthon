@@ -10,75 +10,71 @@ const SessionRecorder: React.FC = () => {
   // UI states
   const [countdown, setCountdown] = useState(0);
   const [showSavedPopup, setShowSavedPopup] = useState(false);
-  const [recordingTime, setRecordingTime] = useState(0);
-  const [micPermission, setMicPermission] = useState<'granted' | 'denied' | 'pending'>('pending');
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  const recordingTimeRef = useRef<number | null>(null);
-  // Check microphone permission on load
-  useEffect(() => {
-    navigator.permissions?.query({ name: 'microphone' as PermissionName })
-      .then(permission => {
-        setMicPermission(permission.state as 'granted' | 'denied');
-        permission.addEventListener('change', () => {
-          setMicPermission(permission.state as 'granted' | 'denied');
-        });
-      })
-      .catch(() => setMicPermission('pending'));
-  }, []);
-
-  const startCountdown = () => {
-    setCountdown(3);
-    const countdownInterval = setInterval(() => {
-      setCountdown(prev => {
-        if (prev <= 1) {
-          clearInterval(countdownInterval);
-          startRecording();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+  const recordingTimeRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  
+  const handleFileUpload = async () => {
+    // Create a file input element
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'audio/*';
+    
+    input.onchange = async (event) => {
+      const file = (event.target as HTMLInputElement).files?.[0];
+      if (file) {
+        await uploadAudioFile(file);
+      }
+    };
+    
+    // Trigger the file selection dialog
+    input.click();
   };
 
-  const startRecording = async () => {
+  const uploadAudioFile = async (file: File) => {
     try {
-      setAudioURL(null);
-      setRecordingTime(0);
-
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const rec = new MediaRecorder(stream);
-      mediaRef.current = rec;
-      chunksRef.current = [];
-
-      rec.ondataavailable = (ev) => chunksRef.current.push(ev.data);
-      rec.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
-        const url = URL.createObjectURL(blob);
-        setAudioURL(url);
-        stream.getTracks().forEach(track => track.stop());
-      };
-
-      rec.start();
-      setRecording(true);
-      setMicPermission('granted');
-
-      // Start recording timer
-      recordingTimeRef.current = setInterval(() => {
-        setRecordingTime(prev => prev + 1);
-      }, 1000);
-
+      // Show loading state
+      setIsProcessing(true);
+      
+      const formData = new FormData();
+      formData.append('audio_file', file);
+      
+      const response = await fetch('http://localhost:5000/transcribe/audio', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Transcription result:', result);
+        
+        // Show success popup
+        setShowSavedPopup(true);
+        setTimeout(() => setShowSavedPopup(false), 3000);
+      } else {
+        const errorData = await response.json();
+        console.error('Upload failed:', errorData);
+        alert('Upload failed: ' + (errorData.error || 'Unknown error'));
+      }
     } catch (error) {
-      console.error('Error accessing microphone:', error);
-      setMicPermission('denied');
+      console.error('Error uploading file:', error);
+      alert('Error uploading file: ' + (error as Error).message);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
   const stopRecording = () => {
-    mediaRef.current?.stop();
+    // Check if MediaRecorder exists and is recording
+    if (mediaRef.current && mediaRef.current.state === 'recording') {
+      mediaRef.current.stop();
+    }
     setRecording(false);
 
     if (recordingTimeRef.current) {
       clearInterval(recordingTimeRef.current);
+      recordingTimeRef.current = null;
     }
 
     // Show saved popup
@@ -88,12 +84,51 @@ const SessionRecorder: React.FC = () => {
     }, 500);
   };
 
+  // Function to save recording to file
+  const saveRecordingToFile = (blob: Blob) => {
+    // Create a download link
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `recording-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.webm`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    // Optionally, you can also send to server:
+    // uploadRecordingToServer(blob);
+  };
+
+  // Optional: Function to upload to server
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const uploadRecordingToServer = async (blob: Blob) => {
+    const formData = new FormData();
+    formData.append('audio', blob, 'recording.webm');
+    
+    try {
+      const response = await fetch('/api/upload-recording', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (response.ok) {
+        console.log('Recording uploaded successfully');
+      } else {
+        console.error('Failed to upload recording');
+      }
+    } catch (error) {
+      console.error('Error uploading recording:', error);
+    }
+  };
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const goBack = () => {
     console.log("Navigate to /dashboard");
   };
@@ -104,6 +139,12 @@ const SessionRecorder: React.FC = () => {
       if (audioURL) URL.revokeObjectURL(audioURL);
       if (recordingTimeRef.current) {
         clearInterval(recordingTimeRef.current);
+      }
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+      if (mediaRef.current && mediaRef.current.state === 'recording') {
+        mediaRef.current.stop();
       }
     };
   }, [audioURL]);
@@ -182,41 +223,51 @@ const SessionRecorder: React.FC = () => {
               color: '#2d3748',
               margin: '0 0 50px 0'
             }}>
-              Voice Recording Session
+              Audio Upload Session
             </h2>
 
         {/* Countdown Display */}
-        {countdown > 0 && (
+        {isProcessing && (
           <div style={{
             position: 'fixed',
             top: '50%',
             left: '50%',
             transform: 'translate(-50%, -50%)',
-            fontSize: isMobile ? '72px' : '96px',
-            fontWeight: '700',
+            fontSize: isMobile ? '24px' : '32px',
+            fontWeight: '600',
             color: '#3fb6a8',
             zIndex: 1000,
             background: 'rgba(255, 255, 255, 0.95)',
             backdropFilter: 'blur(20px)',
-            borderRadius: '50%',
-            width: isMobile ? '120px' : '160px',
-            height: isMobile ? '120px' : '160px',
+            borderRadius: '16px',
+            width: isMobile ? '280px' : '320px',
+            height: isMobile ? '120px' : '140px',
             display: 'flex',
+            flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
             boxShadow: '0 20px 40px rgba(63, 182, 168, 0.2)',
-            animation: 'pulse 1s ease-in-out infinite'
+            animation: 'pulse 2s ease-in-out infinite'
           }}>
-            {countdown}
+            <div style={{
+              width: '40px',
+              height: '40px',
+              border: '4px solid #e2e8f0',
+              borderTop: '4px solid #3fb6a8',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite',
+              marginBottom: '16px'
+            }} />
+            Processing Audio...
           </div>
         )}
 
-        {/* Microphone Visualization */}
+        {/* File Upload Visualization */}
         <div style={{
           width: isMobile ? '200px' : '280px',
           height: isMobile ? '200px' : '280px',
           borderRadius: '50%',
-          background: recording
+          background: isProcessing
             ? 'linear-gradient(135deg, #3fb6a8, #319795)'
             : 'rgba(255, 255, 255, 0.85)',
           backdropFilter: 'blur(20px)',
@@ -225,14 +276,14 @@ const SessionRecorder: React.FC = () => {
           justifyContent: 'center',
           position: 'relative',
           marginBottom: '40px',
-          boxShadow: recording
+          boxShadow: isProcessing
             ? '0 0 0 0 rgba(63, 182, 168, 1), 0 20px 40px rgba(63, 182, 168, 0.3)'
             : '0 20px 40px rgba(0, 0, 0, 0.1)',
-          animation: recording ? 'micPulse 2s ease-in-out infinite' : 'none',
+          animation: isProcessing ? 'micPulse 2s ease-in-out infinite' : 'none',
           transition: 'all 0.3s ease'
         }}>
-          {/* Outer pulse rings for recording state */}
-          {recording && (
+          {/* Outer pulse rings for processing state */}
+          {isProcessing && (
             <>
               <div style={{
                 position: 'absolute',
@@ -253,27 +304,28 @@ const SessionRecorder: React.FC = () => {
             </>
           )}
 
-          {/* Microphone Icon */}
+          {/* Upload Icon */}
           <svg
             width={isMobile ? "64" : "80"}
             height={isMobile ? "64" : "80"}
             viewBox="0 0 24 24"
             fill="none"
-            stroke={recording ? "white" : "#3fb6a8"}
+            stroke={isProcessing ? "white" : "#3fb6a8"}
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
           >
-            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
-            <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-            <line x1="12" y1="19" x2="12" y2="23" />
-            <line x1="8" y1="23" x2="16" y2="23" />
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14,2 14,8 20,8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <polyline points="10,9 9,9 8,9"/>
           </svg>
         </div>
 
-        {/* Recording Status */}
+        {/* Processing Status */}
         <div style={{ marginBottom: '32px' }}>
-          {recording ? (
+          {isProcessing ? (
             <div>
               <h2 style={{
                 fontSize: isMobile ? '24px' : '28px',
@@ -281,7 +333,7 @@ const SessionRecorder: React.FC = () => {
                 color: '#2d3748',
                 margin: '0 0 8px 0'
               }}>
-                Recording in Progress
+                Processing Audio
               </h2>
               <p style={{
                 color: '#3fb6a8',
@@ -289,43 +341,7 @@ const SessionRecorder: React.FC = () => {
                 margin: '0',
                 fontWeight: '600'
               }}>
-                {formatTime(recordingTime)}
-              </p>
-            </div>
-          ) : countdown > 0 ? (
-            <div>
-              <h2 style={{
-                fontSize: isMobile ? '24px' : '28px',
-                fontWeight: '600',
-                color: '#2d3748',
-                margin: '0 0 8px 0'
-              }}>
-                Get Ready
-              </h2>
-              <p style={{
-                color: '#718096',
-                fontSize: isMobile ? '16px' : '18px',
-                margin: '0'
-              }}>
-                Recording starts in {countdown}...
-              </p>
-            </div>
-          ) : micPermission === 'denied' ? (
-            <div>
-              <h2 style={{
-                fontSize: isMobile ? '24px' : '28px',
-                fontWeight: '600',
-                color: '#e53e3e',
-                margin: '0 0 8px 0'
-              }}>
-                Microphone Access Denied
-              </h2>
-              <p style={{
-                color: '#718096',
-                fontSize: isMobile ? '16px' : '18px',
-                margin: '0'
-              }}>
-                Please allow microphone access to record
+                Transcribing your audio file...
               </p>
             </div>
           ) : (
@@ -336,72 +352,30 @@ const SessionRecorder: React.FC = () => {
                 color: '#2d3748',
                 margin: '0 0 8px 0'
               }}>
-                Ready to Record
+                Ready to Upload
               </h2>
               <p style={{
                 color: '#718096',
                 fontSize: isMobile ? '16px' : '18px',
                 margin: '0'
               }}>
-                Click start when you're ready to begin
+                Click upload to select an audio file
               </p>
             </div>
           )}
         </div>
 
         {/* Control Button */}
-        {!recording && countdown === 0 ? (
+        {!isProcessing ? (
           <button
-            onClick={startCountdown}
-            disabled={micPermission === 'denied'}
+            onClick={handleFileUpload}
             style={{
               padding: isMobile ? '16px 32px' : '20px 40px',
               fontSize: isMobile ? '16px' : '18px',
               fontWeight: '600',
               border: 'none',
               borderRadius: '50px',
-              background: micPermission === 'denied'
-                ? '#a0aec0'
-                : 'linear-gradient(135deg, #3fb6a8, #319795)',
-              color: 'white',
-              cursor: micPermission === 'denied' ? 'not-allowed' : 'pointer',
-              transition: 'all 0.2s ease',
-              fontFamily: 'inherit',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              boxShadow: micPermission === 'denied'
-                ? 'none'
-                : '0 8px 20px rgba(63, 182, 168, 0.3)'
-            }}
-            onMouseEnter={(e) => {
-              if (micPermission !== 'denied') {
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = '0 12px 24px rgba(63, 182, 168, 0.4)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (micPermission !== 'denied') {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 8px 20px rgba(63, 182, 168, 0.3)';
-              }
-            }}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <polygon points="8 5 19 12 8 19 8 5" />
-            </svg>
-            Start Recording
-          </button>
-        ) : recording ? (
-          <button
-            onClick={stopRecording}
-            style={{
-              padding: isMobile ? '16px 32px' : '20px 40px',
-              fontSize: isMobile ? '16px' : '18px',
-              fontWeight: '600',
-              border: 'none',
-              borderRadius: '50px',
-              background: 'linear-gradient(135deg, #e53e3e, #c53030)',
+              background: 'linear-gradient(135deg, #3fb6a8, #319795)',
               color: 'white',
               cursor: 'pointer',
               transition: 'all 0.2s ease',
@@ -409,21 +383,25 @@ const SessionRecorder: React.FC = () => {
               display: 'flex',
               alignItems: 'center',
               gap: '12px',
-              boxShadow: '0 8px 20px rgba(229, 62, 62, 0.3)'
+              boxShadow: '0 8px 20px rgba(63, 182, 168, 0.3)'
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = '0 12px 24px rgba(229, 62, 62, 0.4)';
+              e.currentTarget.style.boxShadow = '0 12px 24px rgba(63, 182, 168, 0.4)';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 8px 20px rgba(229, 62, 62, 0.3)';
+              e.currentTarget.style.boxShadow = '0 8px 20px rgba(63, 182, 168, 0.3)';
             }}
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <rect x="6" y="6" width="12" height="12" rx="2" />
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14,2 14,8 20,8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+              <polyline points="10,9 9,9 8,9"/>
             </svg>
-            Stop Recording
+            Upload Recording
           </button>
         ) : null}
       </div>
@@ -467,14 +445,14 @@ const SessionRecorder: React.FC = () => {
             color: '#2d3748',
             margin: '0 0 8px 0'
           }}>
-            Recording Saved!
+            Audio Uploaded Successfully!
           </h3>
           <p style={{
             color: '#718096',
             fontSize: '16px',
             margin: '0'
           }}>
-            Your voice recording has been successfully saved.
+            Your audio file has been processed and transcribed.
           </p>
         </div>
       )}
@@ -506,6 +484,11 @@ const SessionRecorder: React.FC = () => {
               transform: translate(-50%, -50%) scale(1.05); 
               box-shadow: 0 25px 50px rgba(63, 182, 168, 0.3);
             }
+          }
+          
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
           }
           
           @keyframes slideIn {
