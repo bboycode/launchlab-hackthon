@@ -1,13 +1,44 @@
 import React, { useMemo, useState } from "react";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faMicrophone } from '@fortawesome/free-solid-svg-icons';
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { jwtDecode } from 'jwt-decode'
 
 const Dashboard: React.FC = () => {
   const nav = useNavigate();
+  const location = useLocation();
 
-  // Mock user data (replace with actual localStorage in your app)
-  const user = useMemo(() => ({ email: "doctor@voice2vitals.com" }), []);
+  // Get user email from multiple sources (navigation state, localStorage, or fallback)
+  const user = useMemo(() => {
+  let storedUser: any = null;
+
+  try {
+    const authUser = localStorage.getItem("authUser");
+    if (authUser) {
+      // parse localStorage first
+      const parsed = JSON.parse(authUser);
+
+      // decode the JWT token
+      const decoded: any = jwtDecode(parsed.token);
+      console.log(decoded);
+
+      storedUser = {
+        email: parsed.email,
+        token: parsed.token,
+        surname: decoded.last_name // adjust key to match your token payload
+      };
+    }
+  } catch (error) {
+    console.error("Error parsing stored user data:", error);
+  }
+
+  return {
+    email: storedUser?.email || "doctor@voice2vitals.com",
+    token: storedUser?.token,
+    surname: storedUser?.surname
+  };
+}, [location.state]);
+
 
   // Mock patients data with more realistic entries
   const [patients] = useState([
@@ -24,6 +55,8 @@ const Dashboard: React.FC = () => {
   ]);
 
   const logout = () => {
+    // Clear stored user data
+    localStorage.removeItem("authUser");
     console.log("Logout and navigate to /");
     nav('/');
   };
@@ -127,11 +160,9 @@ const Dashboard: React.FC = () => {
 
         <h3 style={{
           color: '#718096',
-          // fontSize: isMobile ? '12px' : '14px',
           margin: '2px 0 0 0',
-          // fontWeight: '500'
         }}>
-          Welcome back, {user?.email}
+           Welcome back, Dr {user.surname || user.email}
         </h3>
         {/* Dashboard Title */}
         <div style={{ marginBottom: isMobile ? '24px' : '32px' }}>
@@ -250,12 +281,12 @@ const Dashboard: React.FC = () => {
                         textDecoration: 'underline',
                         transition: 'color 0.2s ease'
                       }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.color = '#319795';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.color = '#3fb6a8';
-                      }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.color = '#319795';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.color = '#3fb6a8';
+                        }}
                       >
                         {patient.firstName} {patient.lastName}
                       </h4>

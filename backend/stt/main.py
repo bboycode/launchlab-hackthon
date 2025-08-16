@@ -108,8 +108,6 @@ def doctor_signup():
         specialty = data.get('specialty')
         hospital = data.get('hospital')
         
-        # Hash the password
-        hashed_password = generate_password_hash(password)
         
         # Check if email already exists
         existing_doctor = supabase.table('doctor_table').select('id').eq('email_address', email_address).execute()
@@ -130,7 +128,7 @@ def doctor_signup():
             'practice_number': practice_number,
             'specialty': specialty,
             'hospital': hospital,
-            'password': hashed_password
+            'password': password
         }
         
         # Remove None values to let Supabase handle defaults
@@ -243,7 +241,7 @@ def doctor_signin():
         stored_password_hash = doctor['password']
         
         # Verify password
-        if not check_password_hash(stored_password_hash, password):
+        if not (stored_password_hash == password):
             return jsonify({
                 'error': 'Invalid email or password',
                 'success': False
@@ -254,7 +252,15 @@ def doctor_signin():
             'doctor_id': doctor['id'],
             'email': doctor['email_address'],
             'exp': datetime.utcnow() + timedelta(hours=JWT_EXPIRY_HOURS),
-            'iat': datetime.utcnow()
+            'iat': datetime.utcnow(),
+            'first_name' : doctor['first_name'],
+            'last_name' : doctor['last_name'],
+            'id_number' : doctor['id_number'],
+            'phone' : doctor['phone_number'],
+            'practice_number' : doctor['practice_number'],
+            'specialty' : doctor['specialty'],
+            'hospital' : doctor['hospital'],
+            'password' : doctor['password']
         }
         
         access_token = jwt.encode(token_payload, JWT_SECRET, algorithm='HS256')

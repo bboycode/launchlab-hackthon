@@ -8,7 +8,7 @@ const Login: React.FC = () => {
   const [err, setErr] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const onSubmit = async (e: React.FormEvent) => {
+const onSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
   setErr("");
 
@@ -33,14 +33,21 @@ const Login: React.FC = () => {
       return;
     }
 
-    // Store token + doctor info
-    localStorage.setItem("authUser", JSON.stringify({
+    // Store token + doctor info in localStorage
+    const userData = {
       email: data.doctor.email_address,
       token: data.access_token,
-    }));
+    };
+    localStorage.setItem("authUser", JSON.stringify(userData));
 
     setIsLoading(false);
-    nav("/dashboard");
+    
+    // Pass the email through navigation state
+    nav("/dashboard", { 
+      state: { 
+        userEmail: data.doctor.email_address 
+      } 
+    });
 
   } catch (error) {
     console.error("Login error:", error);
