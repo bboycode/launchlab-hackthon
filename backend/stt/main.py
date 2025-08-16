@@ -496,8 +496,72 @@ def logout():
         'message': 'Logged out successfully. Please remove the token from client storage.'
     }), 200
 
+@app.route('/chat/query', methods=['POST'])
+def chat_with_database():
+    """
+    Chat with database using MCP client and Gemini AI
+    
+    Expected JSON payload:
+    {
+        "message": "Your question about the database"
+    }
+    
+    Headers required:
+    Authorization: Bearer <access_token>
+    """
+    try:
+        # Get JSON data from request
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({
+                'error': 'No data provided',
+                'success': False
+            }), 400
+        
+        # Extract the message
+        user_message = data.get('message')
+        
+        if not user_message:
+            return jsonify({
+                'error': 'Message is required',
+                'success': False
+            }), 400
+        
+        # Import and use the MCP client functionality
+        import asyncio
+        from client import process_user_question
+        
+        # Run the async function in the current thread
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
+        try:
+            ai_response = loop.run_until_complete(process_user_question(user_message))
+            
+            return jsonify({
+                'success': True,
+                'message': 'Query processed successfully',
+                'user_message': user_message,
+                'ai_response': ai_response,
+                'doctor': request.current_doctor['email_address']  # From token_required decorator
+            }), 200
+            
+        except Exception as process_error:
+            return jsonify({
+                'error': f'AI processing failed: {str(process_error)}',
+                'success': False
+            }), 500
+        finally:
+            loop.close()
+    
+    except Exception as e:
+        return jsonify({
+            'error': f'Chat query error: {str(e)}',
+            'success': False
+        }), 500
+
 @app.route('/transcribe/audio', methods=['POST'])
-#@token_required
 def submit_audio_for_transcription():
     """
     Basic endpoint to submit audio for transcription

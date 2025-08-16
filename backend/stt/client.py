@@ -240,5 +240,63 @@ async def main():
         except Exception as e:
             print(f"❌ Error: {e}")
 
+
+async def process_user_question(user_question: str) -> str:
+    """
+    Process user question with proper workflow: context -> analysis -> query -> answer
+    Returns just the final answer string for API use
+    """
+    
+    try:
+        # Step 1: Get database context
+        database_context = await get_database_context()
+        
+        if not database_context:
+            return "Unable to get database context. Please check the MCP server connection."
+        
+        # Step 2: Get available tools
+        available_tools = await get_available_tools()
+        
+        # Step 3: Ask Gemini to analyze with context
+        gemini_decision = ask_gemini_with_context(user_question, database_context, available_tools)
+        
+        # Step 4: Execute tool if needed
+        if gemini_decision.get("tool_needed") and gemini_decision.get("tool_name"):
+            tool_name = gemini_decision["tool_name"]
+            parameters = gemini_decision.get("parameters", {})
+            
+            tool_result = await execute_mcp_tool(tool_name, parameters)
+            
+            # Step 5: Generate final answer
+            final_prompt = f"""
+Based on the database query results, provide a clear answer to the user's question.
+
+User Question: "{user_question}"
+Database Query Results: {tool_result}
+Context Understanding: {gemini_decision.get('reasoning', '')}
+
+Provide a helpful, natural language response. If the query found results, summarize them clearly. If no results were found, explain that clearly too.
+"""
+            
+            try:
+                final_resp = gemini_client.models.generate_content(
+                    model="gemini-2.0-flash-exp",
+                    contents=final_prompt
+                )
+                
+                return final_resp.text.strip()
+                
+            except Exception as e:
+                return f"Query completed. Result: {tool_result}"
+        
+        else:
+            # No tool needed or context issues
+            reasoning = gemini_decision.get("reasoning", "Unable to determine appropriate action")
+            return f"Based on the database context: {reasoning}"
+    
+    except Exception as e:
+        return f"Error processing question: {str(e)}"
+
+
 if __name__ == "__main__":
     asyncio.run(main())
