@@ -1,0 +1,9 @@
+*.mp3
+*.wav
+*.flac
+*.json
+*/uv.lock
+*.txt
+*.sh
+*/.env
+*/__pycache__/*
