@@ -6,6 +6,7 @@ from supabase import create_client, Client
 import os
 from datetime import datetime, timedelta
 from auth import validate_email, validate_phone
+from flask_cors import CORS
 
 # Load environment variables
 load_dotenv()
@@ -18,6 +19,7 @@ JWT_SECRET = os.environ.get('JWT_SECRET')
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 app = Flask(__name__)
+CORS(app)
 
 @app.route("/")
 def home():
