@@ -93,6 +93,68 @@ def token_required(f):
     
     return decorated
 
+@app.route('/chat/query', methods=['POST'])
+def chat_with_database():
+    """
+    Chat with database using MCP client and Gemini AI
+    
+    Expected JSON payload:
+    {
+        "message": "Your question about the database"
+    }
+    """
+    try:
+        # Get JSON data from request
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({
+                'error': 'No data provided',
+                'success': False
+            }), 400
+        
+        # Extract the message
+        user_message = data.get('message')
+        
+        if not user_message:
+            return jsonify({
+                'error': 'Message is required',
+                'success': False
+            }), 400
+        
+        # Import and use the MCP client functionality
+        import asyncio
+        from client import process_user_question
+        
+        # Run the async function in the current thread
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
+        try:
+            ai_response = loop.run_until_complete(process_user_question(user_message))
+            
+            return jsonify({
+                'success': True,
+                'message': 'Query processed successfully',
+                'user_message': user_message,
+                'ai_response': ai_response
+                # Removed the 'doctor' field since no authentication
+            }), 200
+            
+        except Exception as process_error:
+            return jsonify({
+                'error': f'AI processing failed: {str(process_error)}',
+                'success': False
+            }), 500
+        finally:
+            loop.close()
+    
+    except Exception as e:
+        return jsonify({
+            'error': f'Chat query error: {str(e)}',
+            'success': False
+        }), 500
+
 @app.route('/patient/<int:patient_id>', methods=['GET'])
 def get_patient(patient_id):
     """
@@ -593,6 +655,7 @@ def logout():
         'message': 'Logged out successfully. Please remove the token from client storage.'
     }), 200
 
+
 @app.route('/transcribe/audio', methods=['POST'])
 #@token_required
 def submit_audio_for_transcription():
@@ -601,6 +664,8 @@ def submit_audio_for_transcription():
     
     Expected form data:
     - audio_file: The audio file to transcribe
+    - patient_id: ID of the patient (optional)
+    - doctor_id: ID of the doctor (optional)
     
     Headers required:
     Authorization: Bearer <access_token>
@@ -615,6 +680,10 @@ def submit_audio_for_transcription():
             filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
     try:
+        # Get patient_id and doctor_id from form data or use defaults
+        patient_id = request.form.get('patient_id') or "1"
+        doctor_id = request.form.get('doctor_id') or "1"
+        
         # Check if file is present in request
         if 'audio_file' not in request.files:
             return jsonify({
@@ -656,13 +725,30 @@ def submit_audio_for_transcription():
             # Clean up temporary file
             os.unlink(temp_file_path)
             
-            # TODO write to bucket
-            upload_clinical_note_to_storage(clinical_note)
+            # Upload to storage bucket
+            upload_result = upload_clinical_note_to_storage(clinical_note)
+            
+            if not upload_result.get('success'):
+                return jsonify({
+                    'error': f'Failed to upload to storage: {upload_result.get("error")}',
+                    'success': False
+                }), 500
+            
+            # Save to database if patient_id and doctor_id are provided
+            db_result = None
+            if patient_id and doctor_id:
+                db_result = upload_note_to_db(
+                    upload_result['public_url'], 
+                    int(patient_id), 
+                    int(doctor_id)
+                )
 
             return jsonify({
                 'success': True,
                 'message': 'Audio transcribed successfully',
-                'clinical_note': clinical_note.model_dump()  # Returns the raw JSON structure
+                'clinical_note': clinical_note.model_dump(),
+                'storage_url': upload_result['public_url'],
+                'database_result': db_result
             }), 200
             
         except Exception as transcription_error:
@@ -762,6 +848,46 @@ def upload_clinical_note_to_storage(clinical_note):
         return {
             'success': False,
             'error': f'Upload error: {str(e)}'
+        }
+
+def upload_note_to_db(clinical_note_url, patient_id, doctor_id):
+    """
+    Insert clinical note URL into the database
+    
+    Args:
+        clinical_note_url: URL of the uploaded clinical note in storage
+        patient_id: ID of the patient
+        doctor_id: ID of the doctor
+    
+    Returns:
+        dict: Database insertion result
+    """
+    try:
+        # Insert note record into clinical_notes table
+        result = supabase.table('clinical_notes').insert({
+            'Note': clinical_note_url,
+            'patient_id': patient_id,
+            'doctor_id': doctor_id,
+            'created_at': datetime.utcnow().isoformat()
+        }).execute()
+        
+        if result.data:
+            return {
+                'success': True,
+                'note_id': result.data[0]['id'],
+                'message': 'Clinical note saved to database successfully'
+            }
+        else:
+            return {
+                'success': False,
+                'error': 'Failed to save clinical note to database'
+            }
+            
+    except Exception as e:
+        print(f"Database error: {str(e)}")  # Debug log
+        return {
+            'success': False,
+            'error': f'Database error: {str(e)}'
         }
 
 
