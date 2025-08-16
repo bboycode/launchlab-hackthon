@@ -26,6 +26,105 @@ CORS(app)
 def home():
     return jsonify({"message": "Flask + Supabase API is running 🚀"})
 
+# Token verification middleware/decorator
+def token_required(f):
+    """Decorator to protect routes that require authentication"""
+    from functools import wraps
+    
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = None
+        
+        # Check for token in Authorization header
+        if 'Authorization' in request.headers:
+            auth_header = request.headers['Authorization']
+            try:
+                token = auth_header.split(" ")[1]  # Bearer <token>
+            except IndexError:
+                return jsonify({
+                    'error': 'Invalid token format',
+                    'success': False
+                }), 401
+        
+        if not token:
+            return jsonify({
+                'error': 'Access token is missing',
+                'success': False
+            }), 401
+        
+        try:
+            # Decode token
+            payload = jwt.decode(token, JWT_SECRET, algorithms=['HS256'])
+            current_doctor_id = payload['doctor_id']
+            
+            # Verify doctor still exists
+            doctor_result = supabase.table('doctor_table').select('id, email_address, first_name, last_name').eq('id', current_doctor_id).execute()
+            
+            if not doctor_result.data:
+                return jsonify({
+                    'error': 'Invalid token - doctor not found',
+                    'success': False
+                }), 401
+            
+            # Add doctor info to request context
+            request.current_doctor = doctor_result.data[0]
+            
+        except jwt.ExpiredSignatureError:
+            return jsonify({
+                'error': 'Token has expired',
+                'success': False
+            }), 401
+        except jwt.InvalidTokenError:
+            return jsonify({
+                'error': 'Invalid token',
+                'success': False
+            }), 401
+        
+        return f(*args, **kwargs)
+    
+    return decorated
+
+@app.route('/doctor/<int:doctor_id>/patients', methods=['GET'])
+@token_required
+def get_doctor_patients(doctor_id):
+    """
+    Fetch all patients assigned to a specific doctor (by doctor_id).
+    Requires Authorization header with Bearer token.
+
+    Example request:
+        GET /doctor/1/patients
+        Headers: Authorization: Bearer <token>
+    """
+    try:
+        # Ensure requesting doctor matches the token OR is allowed
+        current_doctor = request.current_doctor
+        if current_doctor['id'] != doctor_id:
+            return jsonify({
+                'error': 'Unauthorized: You can only access your own patients',
+                'success': False
+            }), 403
+
+        # Fetch patients assigned to this doctor
+        patients_result = supabase.table('patient_table').select('*').eq('primary_physician', doctor_id).execute()
+
+        if not patients_result.data:
+            return jsonify({
+                'success': True,
+                'message': 'No patients found for this doctor',
+                'patients': []
+            }), 200
+
+        return jsonify({
+            'success': True,
+            'patients': patients_result.data
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            'error': f'Error fetching patients: {str(e)}',
+            'success': False
+        }), 500
+
 @app.route('/signup/doctor', methods=['POST'])
 def doctor_signup():
     """
@@ -301,63 +400,7 @@ def doctor_signin():
                 'success': False
             }), 500
 
-# Token verification middleware/decorator
-def token_required(f):
-    """Decorator to protect routes that require authentication"""
-    from functools import wraps
-    
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        token = None
-        
-        # Check for token in Authorization header
-        if 'Authorization' in request.headers:
-            auth_header = request.headers['Authorization']
-            try:
-                token = auth_header.split(" ")[1]  # Bearer <token>
-            except IndexError:
-                return jsonify({
-                    'error': 'Invalid token format',
-                    'success': False
-                }), 401
-        
-        if not token:
-            return jsonify({
-                'error': 'Access token is missing',
-                'success': False
-            }), 401
-        
-        try:
-            # Decode token
-            payload = jwt.decode(token, JWT_SECRET, algorithms=['HS256'])
-            current_doctor_id = payload['doctor_id']
-            
-            # Verify doctor still exists
-            doctor_result = supabase.table('doctor_table').select('id, email_address, first_name, last_name').eq('id', current_doctor_id).execute()
-            
-            if not doctor_result.data:
-                return jsonify({
-                    'error': 'Invalid token - doctor not found',
-                    'success': False
-                }), 401
-            
-            # Add doctor info to request context
-            request.current_doctor = doctor_result.data[0]
-            
-        except jwt.ExpiredSignatureError:
-            return jsonify({
-                'error': 'Token has expired',
-                'success': False
-            }), 401
-        except jwt.InvalidTokenError:
-            return jsonify({
-                'error': 'Invalid token',
-                'success': False
-            }), 401
-        
-        return f(*args, **kwargs)
-    
-    return decorated
+
 
 # Token refresh endpoint
 @app.route('/auth/refresh', methods=['POST'])
@@ -409,7 +452,7 @@ def logout():
         'message': 'Logged out successfully. Please remove the token from client storage.'
     }), 200
 
-@app.route()
+@app.route('/transcribe/audio', methods=['POST'])
 def submit_audio_for_transcription():
     """
     Endpoint to submit audio for transcription

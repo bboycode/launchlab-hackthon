@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faMicrophone } from '@fortawesome/free-solid-svg-icons';
 import { useNavigate, useLocation } from "react-router-dom";
@@ -10,49 +10,82 @@ const Dashboard: React.FC = () => {
 
   // Get user email from multiple sources (navigation state, localStorage, or fallback)
   const user = useMemo(() => {
-  let storedUser: any = null;
+    let storedUser: any = null;
 
-  try {
-    const authUser = localStorage.getItem("authUser");
-    if (authUser) {
-      // parse localStorage first
-      const parsed = JSON.parse(authUser);
+    try {
+      const authUser = localStorage.getItem("authUser");
+      if (authUser) {
+        // parse localStorage first
+        const parsed = JSON.parse(authUser);
 
-      // decode the JWT token
-      const decoded: any = jwtDecode(parsed.token);
-      console.log(decoded);
+        // decode the JWT token
+        const decoded: any = jwtDecode(parsed.token);
+        console.log(decoded);
 
-      storedUser = {
-        email: parsed.email,
-        token: parsed.token,
-        surname: decoded.last_name // adjust key to match your token payload
-      };
+        storedUser = {
+          email: parsed.email,
+          token: parsed.token,
+          surname: decoded.last_name,
+          id: decoded.doctor_id // adjust key to match your token payload
+        };
+      }
+    } catch (error) {
+      console.error("Error parsing stored user data:", error);
     }
-  } catch (error) {
-    console.error("Error parsing stored user data:", error);
-  }
 
-  return {
-    email: storedUser?.email || "doctor@voice2vitals.com",
-    token: storedUser?.token,
-    surname: storedUser?.surname
-  };
-}, [location.state]);
+    return {
+      email: storedUser?.email || "doctor@voice2vitals.com",
+      token: storedUser?.token,
+      surname: storedUser?.surname,
+      id: storedUser?.id
+    };
+  }, [location.state]);
 
 
-  // Mock patients data with more realistic entries
-  const [patients] = useState([
-    { firstName: "John", lastName: "Smith", id: 1, lastSession: "2024-01-15" },
-    { firstName: "Sarah", lastName: "Johnson", id: 2, lastSession: "2024-01-14" },
-    { firstName: "Michael", lastName: "Brown", id: 3, lastSession: "2024-01-12" },
-    { firstName: "Emily", lastName: "Davis", id: 4, lastSession: "2024-01-10" },
-    { firstName: "David", lastName: "Wilson", id: 5, lastSession: "2024-01-08" },
-    { firstName: "Lisa", lastName: "Anderson", id: 6, lastSession: "2024-01-07" },
-    { firstName: "James", lastName: "Taylor", id: 7, lastSession: "2024-01-05" },
-    { firstName: "Maria", lastName: "Garcia", id: 8, lastSession: "2024-01-03" },
-    { firstName: "Robert", lastName: "Martinez", id: 9, lastSession: "2024-01-01" },
-    { firstName: "Jennifer", lastName: "Rodriguez", id: 10, lastSession: "2023-12-30" }
-  ]);
+  // // Mock patients data with more realistic entries
+  // const [patients] = useState([
+  //   { firstName: "John", lastName: "Smith", id: 1, lastSession: "2024-01-15" },
+  //   { firstName: "Sarah", lastName: "Johnson", id: 2, lastSession: "2024-01-14" },
+  //   { firstName: "Michael", lastName: "Brown", id: 3, lastSession: "2024-01-12" },
+  //   { firstName: "Emily", lastName: "Davis", id: 4, lastSession: "2024-01-10" },
+  //   { firstName: "David", lastName: "Wilson", id: 5, lastSession: "2024-01-08" },
+  //   { firstName: "Lisa", lastName: "Anderson", id: 6, lastSession: "2024-01-07" },
+  //   { firstName: "James", lastName: "Taylor", id: 7, lastSession: "2024-01-05" },
+  //   { firstName: "Maria", lastName: "Garcia", id: 8, lastSession: "2024-01-03" },
+  //   { firstName: "Robert", lastName: "Martinez", id: 9, lastSession: "2024-01-01" },
+  //   { firstName: "Jennifer", lastName: "Rodriguez", id: 10, lastSession: "2023-12-30" }
+  // ]);
+
+  const [patients, setPatients] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user.id || !user.token) return;
+
+    const fetchPatients = async () => {
+      try {
+        const res = await fetch(`http://127.0.0.1:5000/doctor/${user.id}/patients`, {
+          headers: {
+            "Authorization": `Bearer ${user.token}`,
+            "Content-Type": "application/json"
+          }
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          setPatients(data.patients || []);
+        } else {
+          console.error("Error fetching patients:", data.error);
+        }
+      } catch (err) {
+        console.error("Fetch error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPatients();
+  }, [user.id, user.token]);
 
   const logout = () => {
     // Clear stored user data
@@ -162,7 +195,7 @@ const Dashboard: React.FC = () => {
           color: '#718096',
           margin: '2px 0 0 0',
         }}>
-           Welcome back, Dr {user.surname || user.email}
+          Welcome back, Dr {user.surname || user.email}
         </h3>
         {/* Dashboard Title */}
         <div style={{ marginBottom: isMobile ? '24px' : '32px' }}>
@@ -288,20 +321,20 @@ const Dashboard: React.FC = () => {
                           e.currentTarget.style.color = '#3fb6a8';
                         }}
                       >
-                        {patient.firstName} {patient.lastName}
+                        {patient.first_name} {patient.last_name}
                       </h4>
-                      <p style={{
+                      {/* <p style={{
                         fontSize: isMobile ? '12px' : '13px',
                         color: '#718096',
                         margin: '0'
                       }}>
                         Last session: {patient.lastSession}
-                      </p>
+                      </p> */}
                     </div>
                     <button
                       onClick={(e) => {
                         e.stopPropagation(); // Prevent triggering the parent div's click
-                        recordSession(`${patient.firstName} ${patient.lastName}`);
+                        recordSession(`${patient.first_name} ${patient.last_name}`);
                       }}
                       style={{
                         display: 'flex',
@@ -325,7 +358,7 @@ const Dashboard: React.FC = () => {
                         e.currentTarget.style.transform = 'scale(1)';
                         e.currentTarget.style.boxShadow = '0 2px 8px rgba(63, 182, 168, 0.2)';
                       }}
-                      title={`Record session for ${patient.firstName} ${patient.lastName}`}
+                      title={`Record session for ${patient.first_name} ${patient.last_name}`}
                     >
                       {/* Mic Icon */}
                       <FontAwesomeIcon icon={faMicrophone} />
