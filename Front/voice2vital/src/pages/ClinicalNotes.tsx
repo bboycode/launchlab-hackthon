@@ -395,8 +395,14 @@ const ClinicalNotes: React.FC = () => {
               {/* Required Fields */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <FontAwesomeIcon icon={faIdCard} style={{ color: '#3fb6a8', width: '16px' }} />
-                <span style={{ fontWeight: '600', color: '#4a5568', minWidth: '80px' }}>ID Number:</span>
+                <span style={{ fontWeight: '600', color: '#4a5568', minWidth: '80px' }}>Patient ID:</span>
                 <span style={{ color: '#2d3748' }}>{patientInfo.id}</span>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <FontAwesomeIcon icon={faIdCard} style={{ color: '#3fb6a8', width: '16px' }} />
+                <span style={{ fontWeight: '600', color: '#4a5568', minWidth: '80px' }}>ID Number:</span>
+                <span style={{ color: '#2d3748' }}>{patientInfo.id_number}</span>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -469,7 +475,7 @@ const ClinicalNotes: React.FC = () => {
               {patientInfo.primary_physician && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <FontAwesomeIcon icon={faUserMd} style={{ color: '#3fb6a8', width: '16px' }} />
-                  <span style={{ fontWeight: '600', color: '#4a5568', minWidth: '120px' }}>Primary Physician:</span>
+                  <span style={{ fontWeight: '600', color: '#4a5568', minWidth: '120px' }}>Primary Physician ID:</span>
                   <span style={{ color: '#2d3748' }}>{patientInfo.primary_physician}</span>
                 </div>
               )}
@@ -577,20 +583,53 @@ const ClinicalNotes: React.FC = () => {
                     </div>
 
                     {/* Note Content */}
-                    <div style={{
-                      background: 'white',
-                      padding: '16px',
-                      borderRadius: '6px',
-                      border: '1px solid #e2e8f0'
-                    }}>
-                      <div style={{
-                        whiteSpace: 'pre-wrap',
+                    <textarea
+                      value={note.note}
+                      onChange={(e) => {
+                        // Update the specific note in the state
+                        const updatedNotes = clinicalNotes.map(n =>
+                          n.id === note.id ? { ...n, note: e.target.value } : n
+                        );
+                        setClinicalNotes(updatedNotes);
+                      }}
+                      style={{
+                        width: '100%',
+                        minHeight: 'auto',
+                        background: 'white',
+                        padding: '16px',
+                        borderRadius: '6px',
+                        border: '1px solid #e2e8f0',
+                        fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                        fontSize: '14px',
+                        lineHeight: '1.6',
                         color: '#2d3748',
-                        lineHeight: '1.6'
-                      }}>
-                        {note.note}
-                      </div>
-                    </div>
+                        resize: 'none',
+                        overflow: 'hidden',
+                        outline: 'none',
+                        boxSizing: 'border-box'
+                      }}
+                      ref={(textarea) => {
+                        if (textarea) {
+                          // Auto-resize on mount and content change
+                          textarea.style.height = 'auto';
+                          textarea.style.height = textarea.scrollHeight + 'px';
+                        }
+                      }}
+                      onInput={(e) => {
+                        // Auto-resize textarea to fit content
+                        const textarea = e.target as HTMLTextAreaElement;
+                        textarea.style.height = 'auto';
+                        textarea.style.height = textarea.scrollHeight + 'px';
+                      }}
+                      onFocus={(e) => {
+                        e.currentTarget.style.borderColor = '#3fb6a8';
+                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(63, 182, 168, 0.1)';
+                      }}
+                      onBlur={(e) => {
+                        e.currentTarget.style.borderColor = '#e2e8f0';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }}
+                    />
                   </div>
                 ))}
               </div>
