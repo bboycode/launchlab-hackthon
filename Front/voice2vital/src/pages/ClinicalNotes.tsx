@@ -10,18 +10,18 @@ interface PatientInfo {
   first_name: string;
   last_name: string;
   id_number: string;
-  dob: string;                      
+  dob: string;
   sex: string;
   language: string;
-  email_address?: string;           
+  email_address?: string;
   phone_number?: string;
   emergency_contact_name?: string;
   emergency_contact_phone?: string;
-  med_aid_provider?: string;        
-  med_aid_number?: string;          
+  med_aid_provider?: string;
+  med_aid_number?: string;
   primary_physician?: string;
-  allergies?: string;               
-  med_conditions?: string;          
+  allergies?: string;
+  med_conditions?: string;
 }
 
 interface ClinicalNote {
@@ -83,7 +83,7 @@ const ClinicalNotes: React.FC = () => {
         let currentPatientInfo = null;
 
         try {
-          const doctorPatientsResponse = await fetch(`http://127.0.0.1:5000/patient/${user.id}`, {
+          const doctorPatientsResponse = await fetch(`http://127.0.0.1:5000/patient/${patientId}`, {
             headers: {
               // "Authorization": `Bearer ${user.token}`,
               "Content-Type": "application/json"
@@ -106,17 +106,17 @@ const ClinicalNotes: React.FC = () => {
                 console.log(currentPatientInfo?.first_name);
                 console.log(currentPatientInfo?.last_name);
                 console.log(currentPatientInfo?.id_number);
-                console.log(currentPatientInfo?.dob);                
+                console.log(currentPatientInfo?.dob);
                 console.log(currentPatientInfo?.sex);
                 console.log(currentPatientInfo?.language);
-                console.log(currentPatientInfo?.email_address);     
+                console.log(currentPatientInfo?.email_address);
                 console.log(currentPatientInfo?.phone_number);
                 console.log(currentPatientInfo?.emergency_contact_name);
                 console.log(currentPatientInfo?.emergency_contact_phone);
-                console.log(currentPatientInfo?.med_aid_provider);  
-                console.log(currentPatientInfo?.med_aid_number);     
+                console.log(currentPatientInfo?.med_aid_provider);
+                console.log(currentPatientInfo?.med_aid_number);
                 console.log(currentPatientInfo?.primary_physician);
-                console.log(currentPatientInfo?.allergies);          
+                console.log(currentPatientInfo?.allergies);
                 console.log(currentPatientInfo?.med_conditions);
               }
             }
@@ -131,15 +131,20 @@ const ClinicalNotes: React.FC = () => {
         }
 
         // Fetch patient notes
-        const notesResponse = await fetch(`http://127.0.0.1:5000/patient/${patientId}/notes`, {
-          headers: {
-            "Authorization": `Bearer ${user.token}`,
-            "Content-Type": "application/json"
+        const notesResponse = await fetch(
+          `http://127.0.0.1:5000/patient/${patientId}/doctor/${user.id}/notes`,
+          {
+            headers: {
+              // "Authorization": `Bearer ${user.token}`,
+              "Content-Type": "application/json"
+            }
           }
-        });
+        );
+
+
+        console.log("Raw response:", notesResponse);
 
         if (!notesResponse.ok) {
-          // If notes endpoint fails, just set empty notes array
           console.warn(`Failed to fetch notes: ${notesResponse.status}`);
           setClinicalNotes([]);
         } else {

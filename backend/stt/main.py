@@ -122,38 +122,46 @@ def get_patient(patient_id):
             'success': False
         }), 500
 
-@app.route('/patient/<int:patient_id>/notes', methods=['GET'])
-def get_patient_notes(patient_id):
+@app.route('/patient/<int:patient_id>/doctor/<int:doctor_id>/notes', methods=['GET'])
+def get_patient_notes(patient_id, doctor_id):
     """
-    Fetch all notes for a specific patient, returning the note content (not URL).
+    Fetch all notes for a specific patient written by a specific doctor.
     Requires Authorization header with Bearer token.
 
     Example request:
-        GET /patient/1/notes
+        GET /patient/1/doctor/2/notes
         Headers: Authorization: Bearer <token>
     """
     try:
-        # Optional: Ensure the requesting doctor is allowed to access this patient
-        current_doctor = request.current_doctor
-        # Example check if you want to restrict access:
-        # patient_result = supabase.table('patient_table').select('*').eq('id', patient_id).execute()
-        # if patient_result.data[0]['primary_physician'] != current_doctor['id']:
+        # Optional: Verify doctor has permission (if using auth decorator)
+        # current_doctor = request.current_doctor
+        # if current_doctor["id"] != doctor_id:
         #     return jsonify({'error': 'Unauthorized', 'success': False}), 403
 
-        # Fetch notes for this patient
-        notes_result = supabase.table('notes').select('*').eq('patient_id', patient_id).execute()
+        print(f"Fetching notes for patient {patient_id}, doctor {doctor_id}");
+
+        # Fetch notes for this patient & doctor
+        notes_result = (
+            supabase.table('clinical_notes')
+            .select('*')
+            .eq('patient_id', patient_id)
+            .eq('doctor_id', doctor_id)
+            .execute()
+        )
+
+        print("Query result:", notes_result)
 
         if not notes_result.data:
             return jsonify({
                 'success': True,
-                'message': 'No notes found for this patient',
+                'message': 'No notes found for this patient from this doctor',
                 'notes': []
             }), 200
 
         # Fetch the content of each note from its URL
         notes_with_content = []
         for note in notes_result.data:
-            note_url = note.get('note')
+            note_url = note.get('Note')
             note_content = None
             try:
                 response = requests.get(note_url)
@@ -166,7 +174,8 @@ def get_patient_notes(patient_id):
                 'id': note['id'],
                 'note': note_content,
                 'created_at': note['created_at'],
-                'doctor_id': note['doctor_id']
+                'doctor_id': note['doctor_id'],
+                'patient_id': note['patient_id']
             })
 
         return jsonify({
