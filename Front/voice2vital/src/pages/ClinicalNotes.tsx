@@ -16,6 +16,7 @@ interface PatientInfo {
   emergencyContactName?: string;
   emergencyContactPhone?: string;
   medicalAidProvider?: string;
+  medicalAidNumber?: string;
   primaryPhysician?: string;
   knownAllergies?: string;
   medicalConditions?: string;
@@ -63,6 +64,7 @@ const ClinicalNotes: React.FC = () => {
         emergencyContactName: "Jane Smith",
         emergencyContactPhone: "+1 (555) 987-6543",
         medicalAidProvider: "HealthCare Plus",
+        medicalAidNumber: "11115555",
         primaryPhysician: "Dr. Sarah Johnson",
         knownAllergies: "Penicillin, Shellfish",
         medicalConditions: "Hypertension, Type 2 Diabetes"
@@ -73,7 +75,6 @@ const ClinicalNotes: React.FC = () => {
         {
           id: 1,
           date: "2024-01-15",
-          sessionDuration: "45 minutes",
           chiefComplaint: "Patient presents with persistent cough and shortness of breath for the past 3 weeks.",
           historyOfPresentIllness: "Mr. Smith reports a dry, persistent cough that began approximately 3 weeks ago. Initially attributed to seasonal allergies, but symptoms have worsened. Patient also reports shortness of breath during mild exertion and occasional chest tightness. No fever, chills, or night sweats. No recent travel or sick contacts.",
           physicalExamination: "Vital Signs: BP 142/88, HR 78, RR 22, Temp 98.6°F, O2 Sat 96%\nGeneral: Alert, oriented, mild respiratory distress\nLungs: Bilateral fine crackles in lower lobes, diminished breath sounds\nHeart: Regular rate and rhythm, no murmurs\nExtremities: No edema, good peripheral pulses",
@@ -85,7 +86,6 @@ const ClinicalNotes: React.FC = () => {
         {
           id: 2,
           date: "2024-01-08",
-          sessionDuration: "30 minutes",
           chiefComplaint: "Routine follow-up for diabetes and hypertension management.",
           historyOfPresentIllness: "Patient returns for routine 3-month follow-up. Reports good medication compliance. Blood glucose levels have been stable (80-140 mg/dL range). Some occasional morning headaches.",
           physicalExamination: "Vital Signs: BP 138/85, HR 72, RR 16, Temp 98.2°F\nGeneral: Well-appearing, no acute distress\nFeet: No ulcerations, good sensation\nHeart: Regular rate and rhythm\nEyes: Fundoscopic exam normal",
@@ -297,7 +297,7 @@ const ClinicalNotes: React.FC = () => {
               {/* Required Fields */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <FontAwesomeIcon icon={faIdCard} style={{ color: '#3fb6a8', width: '16px' }} />
-                <span style={{ fontWeight: '600', color: '#4a5568', minWidth: '80px' }}>ID:</span>
+                <span style={{ fontWeight: '600', color: '#4a5568', minWidth: '80px' }}>ID Number:</span>
                 <span style={{ color: '#2d3748' }}>{patientInfo.id}</span>
               </div>
               
@@ -357,6 +357,14 @@ const ClinicalNotes: React.FC = () => {
                   <span style={{ color: '#3fb6a8', width: '16px', textAlign: 'center' }}>🏥</span>
                   <span style={{ fontWeight: '600', color: '#4a5568', minWidth: '120px' }}>Medical Aid:</span>
                   <span style={{ color: '#2d3748' }}>{patientInfo.medicalAidProvider}</span>
+                </div>
+              )}
+
+              {patientInfo.medicalAidNumber && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <span style={{ color: '#3fb6a8', width: '16px', textAlign: 'center' }}>🏥</span>
+                  <span style={{ fontWeight: '600', color: '#4a5568', minWidth: '120px' }}>Medical Aid Number:</span>
+                  <span style={{ color: '#2d3748' }}>{patientInfo.medicalAidNumber}</span>
                 </div>
               )}
 
@@ -453,15 +461,6 @@ const ClinicalNotes: React.FC = () => {
                         }}>
                           Session Date: {new Date(note.date).toLocaleDateString()}
                         </h4>
-                        {note.sessionDuration && (
-                          <p style={{
-                            fontSize: '12px',
-                            color: '#718096',
-                            margin: '0'
-                          }}>
-                            Duration: {note.sessionDuration}
-                          </p>
-                        )}
                       </div>
                       {note.doctorName && (
                         <div style={{

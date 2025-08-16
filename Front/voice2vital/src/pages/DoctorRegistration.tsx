@@ -25,7 +25,7 @@ const DoctorRegistration: React.FC = () => {
     setErr("");
 
     // Basic validation
-    if (!form.firstName || !form.lastName || !form.idNumber || !form.email || !form.password) {
+    if (!form.firstName || !form.lastName || !form.idNumber || !form.email || !form.password || !form.practiceNumber || !form.specialty || !form.phoneNumber || !form.hospital) {
       setErr("Please fill in all required fields.");
       return;
     }
@@ -295,7 +295,7 @@ const DoctorRegistration: React.FC = () => {
               color: '#2d3748',
               margin: '0 0 8px 0'
             }}>
-              Doctor Registration
+              Registration
             </h2>
             <p style={{
               color: '#718096',
@@ -432,7 +432,7 @@ const DoctorRegistration: React.FC = () => {
 
             <input
               type="tel"
-              placeholder="Phone Number"
+              placeholder="Phone Number *"
               value={form.phoneNumber}
               onChange={(e) => update("phoneNumber", e.target.value)}
               style={{
@@ -463,7 +463,7 @@ const DoctorRegistration: React.FC = () => {
               <div style={{ flex: 1 }}>
                 <input
                   type="text"
-                  placeholder="Practice Number"
+                  placeholder="Practice Number *"
                   value={form.practiceNumber}
                   onChange={(e) => update("practiceNumber", e.target.value)}
                   style={{
@@ -492,7 +492,7 @@ const DoctorRegistration: React.FC = () => {
               <div style={{ flex: 1 }}>
                 <input
                   type="text"
-                  placeholder="Specialty"
+                  placeholder="Specialty *"
                   value={form.specialty}
                   onChange={(e) => update("specialty", e.target.value)}
                   style={{
@@ -522,7 +522,7 @@ const DoctorRegistration: React.FC = () => {
 
             <input
               type="text"
-              placeholder="Hospital/Clinic"
+              placeholder="Hospital/Clinic *"
               value={form.hospital}
               onChange={(e) => update("hospital", e.target.value)}
               style={{
@@ -653,7 +653,7 @@ const DoctorRegistration: React.FC = () => {
                 e.currentTarget.style.boxShadow = '0 8px 20px rgba(63, 182, 168, 0.2)';
               }}
             >
-              Create Doctor Account
+              Create Account
             </button>
 
             <div style={{ textAlign: 'center', marginTop: '20px' }}>

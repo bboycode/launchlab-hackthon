@@ -222,12 +222,21 @@ const Login: React.FC = () => {
               fontWeight: '600',
               border: 'none',
               borderRadius: '12px',
+              background: 'linear-gradient(135deg, #3fb6a8, #319795)',
               color: 'white',
+              cursor: 'pointer',
               transition: 'all 0.2s ease',
               fontFamily: 'inherit',
-              position: 'relative',
-              overflow: 'hidden',
-              backgroundColor: "#3fb6a8",
+              boxShadow: '0 8px 20px rgba(63, 182, 168, 0.2)',
+              marginTop: '8px'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 12px 24px rgba(63, 182, 168, 0.3)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 8px 20px rgba(63, 182, 168, 0.2)';
             }}
           >
             Sign In

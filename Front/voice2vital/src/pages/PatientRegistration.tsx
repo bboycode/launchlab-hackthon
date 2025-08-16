@@ -48,8 +48,13 @@ const PatientRegistration: React.FC = () => {
     if (!p.firstName.trim()) newErrors.push("First name is required");
     if (!p.lastName.trim()) newErrors.push("Last name is required");
     if (!p.dob) newErrors.push("Date of birth is required");
-    if (!p.idNumber.trim()) newErrors.push("ID/Passport number is required");
     if (!p.sex) newErrors.push("Sex is required");
+    if (!p.idNumber.trim()) newErrors.push("ID/Passport number is required");
+    if (!p.email.trim()) newErrors.push("Email is required");
+    if (!p.phone.trim()) newErrors.push("Phone number is required");
+    if (!p.emergencyContactName.trim()) newErrors.push("Emergency contact name is required");
+    if (!p.emergencyContactPhone.trim()) newErrors.push("Emergency contact phone number is required");
+    if (!p.primaryPhysician.trim()) newErrors.push("Primary physician is required");
     if (p.email && !/\S+@\S+\.\S+/.test(p.email)) {
       newErrors.push("Please enter a valid email address");
     }
@@ -58,26 +63,26 @@ const PatientRegistration: React.FC = () => {
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const formErrors = validateForm();
     setErrors(formErrors);
-    
+
     if (formErrors.length > 0) return;
 
     setIsLoading(true);
-    
+
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
-    
+
     // Note: localStorage removed for Claude.ai compatibility
     // In your actual app: 
     // const list: Patient[] = JSON.parse(localStorage.getItem("patients") || "[]");
     // list.push(p);
     // localStorage.setItem("patients", JSON.stringify(list));
-    
+
     setSaved(true);
     setIsLoading(false);
-    
+
     // Auto-hide success message and navigate
     setTimeout(() => {
       console.log("Navigate to /dashboard");
@@ -209,8 +214,8 @@ const PatientRegistration: React.FC = () => {
               gap: '8px'
             }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 12l2 2 4-4"/>
-                <circle cx="12" cy="12" r="10"/>
+                <path d="M9 12l2 2 4-4" />
+                <circle cx="12" cy="12" r="10" />
               </svg>
               Patient registered successfully! Redirecting to dashboard...
             </div>
@@ -249,10 +254,10 @@ const PatientRegistration: React.FC = () => {
               }}>
                 Personal Information
               </h3>
-              <div style={{ 
-                display: 'grid', 
-                gap: '16px', 
-                gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr' 
+              <div style={{
+                display: 'grid',
+                gap: '16px',
+                gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr'
               }}>
                 <input
                   type="text"
@@ -367,8 +372,6 @@ const PatientRegistration: React.FC = () => {
                   <option value="">Select sex *</option>
                   <option value="Male">Male</option>
                   <option value="Female">Female</option>
-                  <option value="Other">Other</option>
-                  <option value="Prefer not to say">Prefer not to say</option>
                 </select>
                 <input
                   type="text"
@@ -398,37 +401,76 @@ const PatientRegistration: React.FC = () => {
                     e.target.style.boxShadow = 'none';
                   }}
                 />
-                <select
-                  value={p.preferredLanguage}
-                  onChange={(e) => update("preferredLanguage", e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '16px 20px',
-                    fontSize: '16px',
-                    border: '2px solid #e2e8f0',
-                    borderRadius: '12px',
-                    outline: 'none',
-                    transition: 'all 0.2s ease',
-                    backgroundColor: '#ffffff',
-                    color: '#2d3748',
-                    fontFamily: 'inherit',
-                    boxSizing: 'border-box'
-                  }}
-                  onFocus={(e) => {
-                    e.target.style.borderColor = '#3fb6a8';
-                    e.target.style.boxShadow = '0 0 0 3px rgba(63, 182, 168, 0.1)';
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.borderColor = '#e2e8f0';
-                    e.target.style.boxShadow = 'none';
-                  }}
-                >
-                  <option value="English">English</option>
-                  <option value="Afrikaans">Afrikaans</option>
-                  <option value="Zulu">Zulu</option>
-                  <option value="Xhosa">Xhosa</option>
-                  <option value="Other">Other</option>
-                </select>
+
+                <div>
+                  <select
+                    value={p.preferredLanguage}
+                    onChange={(e) => update("preferredLanguage", e.target.value)}
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '16px 20px',
+                      fontSize: '16px',
+                      border: '2px solid #e2e8f0',
+                      borderRadius: '12px',
+                      outline: 'none',
+                      transition: 'all 0.2s ease',
+                      backgroundColor: '#ffffff',
+                      color: p.preferredLanguage ? '#2d3748' : '#a0aec0',
+                      fontFamily: 'inherit',
+                      boxSizing: 'border-box'
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = '#3fb6a8';
+                      e.target.style.boxShadow = '0 0 0 3px rgba(63, 182, 168, 0.1)';
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = '#e2e8f0';
+                      e.target.style.boxShadow = 'none';
+                    }}
+                  >
+                    <option value="">Select preferred language *</option>
+                    <option value="English">English</option>
+                    <option value="Afrikaans">Spanish</option>
+                    <option value="Zulu">Mandarin</option>
+                    <option value="Xhosa">Tagalog</option>
+                    <option value="Other">Other (please specify below)</option>
+                  </select>
+                </div>
+
+                {/* Custom Language Input (if Other is selected) */}
+                {p.preferredLanguage === "Other" && (
+                  <div>
+                    <input
+                      type="text"
+                      placeholder="Please specify your preferred language *"
+                      onChange={(e) => update("preferredLanguage", e.target.value)}
+                      required
+                      style={{
+                        width: '100%',
+                        padding: '16px 20px',
+                        fontSize: '16px',
+                        border: '2px solid #e2e8f0',
+                        borderRadius: '12px',
+                        outline: 'none',
+                        transition: 'all 0.2s ease',
+                        backgroundColor: '#ffffff',
+                        color: '#2d3748',
+                        fontFamily: 'inherit',
+                        boxSizing: 'border-box'
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = '#3fb6a8';
+                        e.target.style.boxShadow = '0 0 0 3px rgba(63, 182, 168, 0.1)';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = '#e2e8f0';
+                        e.target.style.boxShadow = 'none';
+                      }}
+                    />
+                  </div>
+                )}
+
               </div>
             </div>
 
@@ -444,14 +486,14 @@ const PatientRegistration: React.FC = () => {
               }}>
                 Contact Information
               </h3>
-              <div style={{ 
-                display: 'grid', 
-                gap: '16px', 
-                gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr' 
+              <div style={{
+                display: 'grid',
+                gap: '16px',
+                gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr'
               }}>
                 <input
                   type="email"
-                  placeholder="Email address"
+                  placeholder="Email address *"
                   value={p.email}
                   onChange={(e) => update("email", e.target.value)}
                   style={{
@@ -478,7 +520,7 @@ const PatientRegistration: React.FC = () => {
                 />
                 <input
                   type="tel"
-                  placeholder="Phone number"
+                  placeholder="Phone number *"
                   value={p.phone}
                   onChange={(e) => update("phone", e.target.value)}
                   style={{
@@ -505,7 +547,7 @@ const PatientRegistration: React.FC = () => {
                 />
                 <input
                   type="text"
-                  placeholder="Emergency contact name"
+                  placeholder="Emergency contact name *"
                   value={p.emergencyContactName}
                   onChange={(e) => update("emergencyContactName", e.target.value)}
                   style={{
@@ -532,7 +574,7 @@ const PatientRegistration: React.FC = () => {
                 />
                 <input
                   type="tel"
-                  placeholder="Emergency contact phone"
+                  placeholder="Emergency contact phone *"
                   value={p.emergencyContactPhone}
                   onChange={(e) => update("emergencyContactPhone", e.target.value)}
                   style={{
@@ -572,10 +614,10 @@ const PatientRegistration: React.FC = () => {
               }}>
                 Medical Information
               </h3>
-              <div style={{ 
-                display: 'grid', 
-                gap: '16px', 
-                gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr' 
+              <div style={{
+                display: 'grid',
+                gap: '16px',
+                gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr'
               }}>
                 <input
                   type="text"
@@ -633,7 +675,7 @@ const PatientRegistration: React.FC = () => {
                 />
                 <input
                   type="text"
-                  placeholder="Primary physician"
+                  placeholder="Primary physician *"
                   value={p.primaryPhysician}
                   onChange={(e) => update("primaryPhysician", e.target.value)}
                   style={{
@@ -659,7 +701,7 @@ const PatientRegistration: React.FC = () => {
                   }}
                 />
                 <textarea
-                  placeholder="Known allergies or medical conditions"
+                  placeholder="Known allergies"
                   value={p.knownAllergies}
                   onChange={(e) => update("knownAllergies", e.target.value)}
                   rows={3}
@@ -687,6 +729,37 @@ const PatientRegistration: React.FC = () => {
                     e.target.style.boxShadow = 'none';
                   }}
                 />
+
+                <textarea
+                  placeholder="Known medical conditions"
+                  value={p.knownAllergies}
+                  onChange={(e) => update("knownAllergies", e.target.value)}
+                  rows={3}
+                  style={{
+                    width: '100%',
+                    padding: '16px 20px',
+                    fontSize: '16px',
+                    border: '2px solid #e2e8f0',
+                    borderRadius: '12px',
+                    outline: 'none',
+                    transition: 'all 0.2s ease',
+                    backgroundColor: '#ffffff',
+                    color: '#2d3748',
+                    fontFamily: 'inherit',
+                    boxSizing: 'border-box',
+                    resize: 'vertical',
+                    minHeight: '56px'
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = '#3fb6a8';
+                    e.target.style.boxShadow = '0 0 0 3px rgba(63, 182, 168, 0.1)';
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = '#e2e8f0';
+                    e.target.style.boxShadow = 'none';
+                  }}
+                />
+
               </div>
             </div>
 
@@ -702,8 +775,8 @@ const PatientRegistration: React.FC = () => {
                 fontWeight: '600',
                 border: 'none',
                 borderRadius: '12px',
-                background: isLoading 
-                  ? '#a0aec0' 
+                background: isLoading
+                  ? '#a0aec0'
                   : 'linear-gradient(135deg, #3fb6a8, #319795)',
                 color: 'white',
                 cursor: isLoading ? 'not-allowed' : 'pointer',
