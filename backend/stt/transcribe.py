@@ -19,7 +19,7 @@ def submit_audio_file(file_path):
     """Submit an audio file for transcription."""
     with open(file_path, 'rb') as audio_file:
         job = client.submit_job_local_file(audio_file)
-    print(f"Job submitted with id: {job_id}")
+    print(f"Job submitted with id: {job.id}")
 
     return job.id
 
