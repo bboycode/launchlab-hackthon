@@ -193,31 +193,6 @@ const DoctorRegistration: React.FC = () => {
               From doctor-patient conversations to organized clinical notes.
             </p>
           </div>
-          <button
-            onClick={() => nav('/')}
-            style={{
-              padding: isMobile ? '8px 16px' : '10px 20px',
-              fontSize: isMobile ? '13px' : '14px',
-              fontWeight: '600',
-              border: '1px solid #e2e8f0',
-              borderRadius: '8px',
-              background: 'white',
-              color: '#4a5568',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              fontFamily: 'inherit'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = '#3fb6a8';
-              e.currentTarget.style.color = '#3fb6a8';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = '#e2e8f0';
-              e.currentTarget.style.color = '#4a5568';
-            }}
-          >
-            Back to Login
-          </button>
         </div>
       </div>
 
