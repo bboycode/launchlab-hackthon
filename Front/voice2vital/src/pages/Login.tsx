@@ -6,8 +6,9 @@ const Login: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [err, setErr] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const onSubmit = (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErr("");
 
@@ -16,6 +17,19 @@ const Login: React.FC = () => {
       setErr("Enter email and password.");
       return;
     }
+    setIsLoading(true);
+
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Note: localStorage removed for Claude.ai compatibility
+    // In your actual app: 
+    // const list: Patient[] = JSON.parse(localStorage.getItem("patients") || "[]");
+    // list.push(p);
+    // localStorage.setItem("patients", JSON.stringify(list));
+
+    setIsLoading(false);
+
     localStorage.setItem("authUser", JSON.stringify({ email }));
     nav("/dashboard");
   };
@@ -213,7 +227,7 @@ const Login: React.FC = () => {
             </div>
           )}
 
-          <button
+          {/* <button
             type="submit"
             style={{
               width: '100%',
@@ -240,7 +254,57 @@ const Login: React.FC = () => {
             }}
           >
             Sign In
-          </button>
+          </button> */}
+
+          <button
+              type="submit"
+              onClick={onSubmit}
+              disabled={isLoading}
+              style={{
+                width: '100%',
+                padding: '18px',
+                fontSize: '16px',
+                fontWeight: '600',
+                border: 'none',
+                borderRadius: '12px',
+                background: isLoading
+                  ? '#a0aec0'
+                  : 'linear-gradient(135deg, #3fb6a8, #319795)',
+                color: 'white',
+                cursor: isLoading ? 'not-allowed' : 'pointer',
+                transition: 'all 0.2s ease',
+                fontFamily: 'inherit',
+                marginTop: '16px'
+              }}
+              onMouseEnter={(e) => {
+                if (!isLoading) {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 12px 24px rgba(63, 182, 168, 0.3)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isLoading) {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }
+              }}
+            >
+              {isLoading ? (
+                <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                  <span style={{
+                    width: '16px',
+                    height: '16px',
+                    border: '2px solid rgba(255,255,255,0.3)',
+                    borderTop: '2px solid white',
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite'
+                  }} />
+                  Signing In...
+                </span>
+              ) : (
+                'Sign In'
+              )}
+            </button>
 
           <div style={{ textAlign: 'center', marginTop: '24px' }}>
             <p style={{ color: '#718096', fontSize: '15px', margin: '0' }}>
