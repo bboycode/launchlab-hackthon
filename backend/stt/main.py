@@ -505,9 +505,6 @@ def chat_with_database():
     {
         "message": "Your question about the database"
     }
-    
-    Headers required:
-    Authorization: Bearer <access_token>
     """
     try:
         # Get JSON data from request
@@ -543,8 +540,8 @@ def chat_with_database():
                 'success': True,
                 'message': 'Query processed successfully',
                 'user_message': user_message,
-                'ai_response': ai_response,
-                'doctor': request.current_doctor['email_address']  # From token_required decorator
+                'ai_response': ai_response
+                # Removed the 'doctor' field since no authentication
             }), 200
             
         except Exception as process_error:
