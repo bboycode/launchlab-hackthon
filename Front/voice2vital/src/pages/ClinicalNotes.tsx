@@ -577,20 +577,53 @@ const ClinicalNotes: React.FC = () => {
                     </div>
 
                     {/* Note Content */}
-                    <div style={{
-                      background: 'white',
-                      padding: '16px',
-                      borderRadius: '6px',
-                      border: '1px solid #e2e8f0'
-                    }}>
-                      <div style={{
-                        whiteSpace: 'pre-wrap',
+                    <textarea
+                      value={note.note}
+                      onChange={(e) => {
+                        // Update the specific note in the state
+                        const updatedNotes = clinicalNotes.map(n =>
+                          n.id === note.id ? { ...n, note: e.target.value } : n
+                        );
+                        setClinicalNotes(updatedNotes);
+                      }}
+                      style={{
+                        width: '100%',
+                        minHeight: 'auto',
+                        background: 'white',
+                        padding: '16px',
+                        borderRadius: '6px',
+                        border: '1px solid #e2e8f0',
+                        fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                        fontSize: '14px',
+                        lineHeight: '1.6',
                         color: '#2d3748',
-                        lineHeight: '1.6'
-                      }}>
-                        {note.note}
-                      </div>
-                    </div>
+                        resize: 'none',
+                        overflow: 'hidden',
+                        outline: 'none',
+                        boxSizing: 'border-box'
+                      }}
+                      ref={(textarea) => {
+                        if (textarea) {
+                          // Auto-resize on mount and content change
+                          textarea.style.height = 'auto';
+                          textarea.style.height = textarea.scrollHeight + 'px';
+                        }
+                      }}
+                      onInput={(e) => {
+                        // Auto-resize textarea to fit content
+                        const textarea = e.target as HTMLTextAreaElement;
+                        textarea.style.height = 'auto';
+                        textarea.style.height = textarea.scrollHeight + 'px';
+                      }}
+                      onFocus={(e) => {
+                        e.currentTarget.style.borderColor = '#3fb6a8';
+                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(63, 182, 168, 0.1)';
+                      }}
+                      onBlur={(e) => {
+                        e.currentTarget.style.borderColor = '#e2e8f0';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }}
+                    />
                   </div>
                 ))}
               </div>
