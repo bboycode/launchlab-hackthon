@@ -403,8 +403,20 @@ def logout():
         'message': 'Logged out successfully. Please remove the token from client storage.'
     }), 200
 
+@app.route()
+def submit_audio_for_transcription():
+    """
+    Endpoint to submit audio for transcription
+    This is a placeholder function, actual implementation will depend on the transcription service used.
+    """
+    return jsonify({
+        'message': 'Audio submission endpoint is under construction.'
+    }), 501
+
 if __name__ == '__main__':
     app.run(debug=True)
+
+
 
 # Example usage and testing:
 """
