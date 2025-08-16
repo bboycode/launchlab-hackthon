@@ -27,4 +27,4 @@ def refine_transcript(raw_transcript_json):
         text = "".join(text_parts).strip()
         chat_lines.append(f"{speaker}: {text}")
 
-    return ("\n".join(chat_lines), chat_lines)
+    return ("\n".join(chat_lines))

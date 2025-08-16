@@ -1,4 +1,5 @@
 import os
+from utils import *
 from typing import Optional, List
 from dotenv import load_dotenv
 from google import genai
@@ -62,16 +63,43 @@ client = genai.Client()  # reads GEMINI_API_KEY from .env
 def build_prompt(transcript: str) -> str:
     """Build the Gemini extraction prompt."""
     return f"""
-You are a medical scribe. Extract structured data from the transcript and return valid JSON matching the ClinicalNote schema below.
+You are a medical scribe. Extract structured data from the transcript and return valid JSON strictly following the ClinicalNote schema.  
 
+Instructions:
+You are a medical scribe. From the transcript, return valid JSON matching the ClinicalNoteFull schema exactly.
 Rules:
-1. Use only explicit information from the transcript unless a value can be logically derived.
-2. If a field is missing, set it to:
-   - "Not stated" for strings
-   - [] for lists
-3. Do not paraphrase diagnoses/medications/plans.
-4. Fill every field in the schema.
-5. Output valid JSON only.
+1. Fill every field, either from explicit info or by logical derivation (e.g., calculate age from DOB and clinic date).
+
+2. If a value is missing, use "Not stated" for strings and [] for lists.
+
+3. Use full, exact clinical wording from the transcript.
+
+4. Do not skip any field.
+
+5. Output JSON only.
+
+6. Patient Information: Always include the patient's **sex** in `patient_info`.  
+   - If stated, record exactly as given.  
+   - If not stated, infer logically if possible (e.g., from pronouns or names). Otherwise, set to "Not stated".  
+
+7. Plan Section: The `plan` field must contain **clear, actionable medical suggestions**, not generic text.  
+   - Include medications with names and dosages (if mentioned).  
+   - Record diagnostic tests, referrals, or imaging orders.  
+   - Add lifestyle or home-care recommendations if stated.  
+   - Always include follow-up instructions if given.  
+
+8. Accuracy:  
+   - Preserve all clinical details exactly as stated in the transcript.  
+   - Do not paraphrase or omit diagnoses, medications, or plans.  
+
+9. Completeness:  
+   - Every field in the schema must be present.  
+   - Use `"Not stated"` for missing string fields and `[]` for missing list fields.  
+
+10. Output:  
+   - Return **only valid JSON** that conforms to the schema.  
+   - Do not include explanations, notes, or extra text outside the JSON.  
+
 
 Schema:
 - patient_info:
@@ -178,7 +206,8 @@ Medical Decision Making (MDM)
 # --- Main Entrypoint ---
 if __name__ == "__main__":
     # Replace this with reading from file/stdin if needed
-    transcript = """... your transcript text here ..."""
+    transcript = read_string_from_file("chat_transcript.txt")
 
     note = extract_clinical_note(transcript)
     print_note(note)
+    write_json_to_file(note.dict(), "clinical_note.json")
