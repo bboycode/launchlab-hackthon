@@ -14,6 +14,7 @@ load_dotenv()
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 JWT_SECRET = os.environ.get('JWT_SECRET')
+JWT_EXPIRY_HOURS = 24
 
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)

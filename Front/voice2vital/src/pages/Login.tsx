@@ -9,30 +9,46 @@ const Login: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErr("");
+  e.preventDefault();
+  setErr("");
 
-    // Dummy auth: accept anything non-empty
-    if (!email || !password) {
-      setErr("Enter email and password.");
+  if (!email || !password) {
+    setErr("Enter email and password.");
+    return;
+  }
+
+  setIsLoading(true);
+  try {
+    const res = await fetch("http://127.0.0.1:5000/signin/doctor", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email_address: email, password }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      setErr(data.error || "Login failed");
+      setIsLoading(false);
       return;
     }
-    setIsLoading(true);
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // Note: localStorage removed for Claude.ai compatibility
-    // In your actual app: 
-    // const list: Patient[] = JSON.parse(localStorage.getItem("patients") || "[]");
-    // list.push(p);
-    // localStorage.setItem("patients", JSON.stringify(list));
+    // Store token + doctor info
+    localStorage.setItem("authUser", JSON.stringify({
+      email: data.doctor.email_address,
+      token: data.access_token,
+    }));
 
     setIsLoading(false);
-
-    localStorage.setItem("authUser", JSON.stringify({ email }));
     nav("/dashboard");
-  };
+
+  } catch (error) {
+    console.error("Login error:", error);
+    setErr("Something went wrong. Please try again.");
+    setIsLoading(false);
+  }
+};
+
 
   return (
     <div style={{
