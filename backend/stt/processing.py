@@ -1,4 +1,5 @@
 import os
+from utils import *
 from typing import Optional, List
 from dotenv import load_dotenv
 from google import genai
@@ -178,7 +179,8 @@ Medical Decision Making (MDM)
 # --- Main Entrypoint ---
 if __name__ == "__main__":
     # Replace this with reading from file/stdin if needed
-    transcript = """... your transcript text here ..."""
+    transcript = read_string_from_file("chat_transcript.txt")
 
     note = extract_clinical_note(transcript)
     print_note(note)
+    write_json_to_file(note.dict(), "clinical_note.json")
