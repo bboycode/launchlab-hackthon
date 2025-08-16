@@ -349,14 +349,14 @@ def doctor_signup():
         hospital = data.get('hospital')
         
         
-        # Check if email already exists
-        existing_doctor = supabase.table('doctor_table').select('id').eq('email_address', email_address).execute()
+        # # Check if email already exists
+        # existing_doctor = supabase.table('doctor_table').select('id').eq('email_address', email_address).execute()
         
-        if existing_doctor.data:
-            return jsonify({
-                'error': 'Email address already registered',
-                'success': False
-            }), 409
+        # if existing_doctor.data:
+        #     return jsonify({
+        #         'error': 'Email address already registered',
+        #         'success': False
+        #     }), 409
         
         # Prepare data for insertion
         doctor_data = {
