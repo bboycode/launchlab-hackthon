@@ -1,6 +1,7 @@
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 import jwt
+import requests
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 import tempfile
@@ -91,6 +92,93 @@ def token_required(f):
         return f(*args, **kwargs)
     
     return decorated
+
+@app.route('/patient/<int:patient_id>', methods=['GET'])
+def get_patient(patient_id):
+    """
+    Fetch patient information by ID.
+    Requires Authorization header with Bearer token.
+    """
+    try:
+        
+        # Fetch patient info
+        patient_result = supabase.table('patient_table').select('*').eq('id', patient_id).execute()
+
+        
+        if not patient_result.data:
+            return jsonify({
+                'success': False,
+                'error': 'Patient not found'
+            }), 404
+            
+        return jsonify({
+            'success': True,
+            'patient': patient_result.data[0]
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'error': f'Error fetching patient: {str(e)}',
+            'success': False
+        }), 500
+
+@app.route('/patient/<int:patient_id>/notes', methods=['GET'])
+def get_patient_notes(patient_id):
+    """
+    Fetch all notes for a specific patient, returning the note content (not URL).
+    Requires Authorization header with Bearer token.
+
+    Example request:
+        GET /patient/1/notes
+        Headers: Authorization: Bearer <token>
+    """
+    try:
+        # Optional: Ensure the requesting doctor is allowed to access this patient
+        current_doctor = request.current_doctor
+        # Example check if you want to restrict access:
+        # patient_result = supabase.table('patient_table').select('*').eq('id', patient_id).execute()
+        # if patient_result.data[0]['primary_physician'] != current_doctor['id']:
+        #     return jsonify({'error': 'Unauthorized', 'success': False}), 403
+
+        # Fetch notes for this patient
+        notes_result = supabase.table('notes').select('*').eq('patient_id', patient_id).execute()
+
+        if not notes_result.data:
+            return jsonify({
+                'success': True,
+                'message': 'No notes found for this patient',
+                'notes': []
+            }), 200
+
+        # Fetch the content of each note from its URL
+        notes_with_content = []
+        for note in notes_result.data:
+            note_url = note.get('note')
+            note_content = None
+            try:
+                response = requests.get(note_url)
+                response.raise_for_status()
+                note_content = response.text  # or response.json() if stored as JSON
+            except Exception as e:
+                note_content = f"Error fetching note content: {str(e)}"
+
+            notes_with_content.append({
+                'id': note['id'],
+                'note': note_content,
+                'created_at': note['created_at'],
+                'doctor_id': note['doctor_id']
+            })
+
+        return jsonify({
+            'success': True,
+            'notes': notes_with_content
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            'error': f'Error fetching notes: {str(e)}',
+            'success': False
+        }), 500
 
 @app.route('/patients', methods=['POST'])
 def create_patient():
