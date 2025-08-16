@@ -2,11 +2,16 @@ from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 import jwt
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
+import tempfile
+import json
+import uuid
 from supabase import create_client, Client
 import os
 from datetime import datetime, timedelta
 from auth import validate_email, validate_phone
 from flask_cors import CORS
+from transcribe import transcribe
 
 # Load environment variables
 load_dotenv()
@@ -492,14 +497,177 @@ def logout():
     }), 200
 
 @app.route('/transcribe/audio', methods=['POST'])
+#@token_required
 def submit_audio_for_transcription():
     """
-    Endpoint to submit audio for transcription
-    This is a placeholder function, actual implementation will depend on the transcription service used.
+    Basic endpoint to submit audio for transcription
+    
+    Expected form data:
+    - audio_file: The audio file to transcribe
+    
+    Headers required:
+    Authorization: Bearer <access_token>
     """
-    return jsonify({
-        'message': 'Audio submission endpoint is under construction.'
-    }), 501
+
+    ALLOWED_EXTENSIONS = {'mp3', 'wav', 'flac', 'm4a', 'ogg', 'webm'}
+    MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB
+
+    def allowed_file(filename):
+        """Check if the uploaded file has an allowed extension."""
+        return '.' in filename and \
+            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+    try:
+        # Check if file is present in request
+        if 'audio_file' not in request.files:
+            return jsonify({
+                'error': 'No audio file provided',
+                'success': False
+            }), 400
+        
+        file = request.files['audio_file']
+        
+        # Check if file was selected
+        if file.filename == '':
+            return jsonify({
+                'error': 'No file selected',
+                'success': False
+            }), 400
+        
+        # Validate file type
+        if not allowed_file(file.filename):
+            return jsonify({
+                'error': f'Invalid file type. Allowed types: {", ".join(ALLOWED_EXTENSIONS)}',
+                'success': False
+            }), 400
+        
+        # Secure the filename
+        filename = secure_filename(file.filename)
+        
+        # Create a temporary file to store the upload
+        with tempfile.NamedTemporaryFile(delete=False, suffix=f".{filename.rsplit('.', 1)[1].lower()}") as temp_file:
+            file.save(temp_file.name)
+            temp_file_path = temp_file.name
+        
+        try:
+            # Process the audio file
+            import asyncio
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            clinical_note = loop.run_until_complete(transcribe(temp_file_path))
+            
+            # Clean up temporary file
+            os.unlink(temp_file_path)
+            
+            # TODO write to bucket
+            upload_clinical_note_to_storage(clinical_note)
+
+            return jsonify({
+                'success': True,
+                'message': 'Audio transcribed successfully',
+                'clinical_note': clinical_note.model_dump()  # Returns the raw JSON structure
+            }), 200
+            
+        except Exception as transcription_error:
+            # Clean up temporary file in case of error
+            try:
+                os.unlink(temp_file_path)
+            except:
+                pass
+            
+            return jsonify({
+                'error': f'Transcription failed: {str(transcription_error)}',
+                'success': False
+            }), 500
+    
+    except Exception as e:
+        return jsonify({
+            'error': f'Audio processing error: {str(e)}',
+            'success': False
+        }), 500
+
+
+
+def upload_clinical_note_to_storage(clinical_note):
+    """
+    Upload clinical note JSON to Supabase storage bucket
+    
+    Args:
+        clinical_note: ClinicalNote object from transcription
+        doctor_id: Optional doctor ID (not used in filename)
+    
+    Returns:
+        dict: Upload result with file path and URL
+    """
+    try:
+        # Convert clinical note to JSON
+        json_data = clinical_note.model_dump()
+        json_string = json.dumps(json_data, indent=2)
+        
+        # Generate pure random filename
+        timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+        random_name = str(uuid.uuid4())[:8]  # Random 8-character string
+        
+        # Simple file path with random name only
+        file_path = f"Notes/{timestamp}_{random_name}.json"
+        
+        print(f"Attempting to upload to path: {file_path}")  # Debug log
+        
+        # Create temporary JSON file
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False, encoding='utf-8') as temp_json_file:
+            temp_json_file.write(json_string)
+            temp_json_path = temp_json_file.name
+        
+        try:
+            # Upload the temporary file to Supabase storage
+            with open(temp_json_path, 'rb') as f:
+                response = supabase.storage.from_("Notes").upload(
+                    file=f,
+                    path=file_path,
+                    file_options={
+                        "cache-control": "3600", 
+                        "upsert": "false",
+                        "content-type": "application/json"
+                    }
+                )
+            
+            # Clean up temporary file
+            os.unlink(temp_json_path)
+            
+            print(f"Upload response: {response}")  # Debug log
+            
+            if response:
+                # Get public URL
+                public_url = supabase.storage.from_("Notes").get_public_url(file_path)
+                
+                return {
+                    'success': True,
+                    'file_path': file_path,
+                    'public_url': public_url,
+                    'message': 'Clinical note uploaded successfully'
+                }
+            else:
+                return {
+                    'success': False,
+                    'error': 'Failed to upload clinical note - no response from storage'
+                }
+                
+        except Exception as upload_error:
+            # Clean up temporary file in case of upload error
+            try:
+                os.unlink(temp_json_path)
+            except:
+                pass
+            raise upload_error
+            
+    except Exception as e:
+        print(f"Upload error: {str(e)}")  # Debug log
+        return {
+            'success': False,
+            'error': f'Upload error: {str(e)}'
+        }
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)
