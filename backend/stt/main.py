@@ -93,6 +93,68 @@ def token_required(f):
     
     return decorated
 
+@app.route('/chat/query', methods=['POST'])
+def chat_with_database():
+    """
+    Chat with database using MCP client and Gemini AI
+    
+    Expected JSON payload:
+    {
+        "message": "Your question about the database"
+    }
+    """
+    try:
+        # Get JSON data from request
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({
+                'error': 'No data provided',
+                'success': False
+            }), 400
+        
+        # Extract the message
+        user_message = data.get('message')
+        
+        if not user_message:
+            return jsonify({
+                'error': 'Message is required',
+                'success': False
+            }), 400
+        
+        # Import and use the MCP client functionality
+        import asyncio
+        from client import process_user_question
+        
+        # Run the async function in the current thread
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
+        try:
+            ai_response = loop.run_until_complete(process_user_question(user_message))
+            
+            return jsonify({
+                'success': True,
+                'message': 'Query processed successfully',
+                'user_message': user_message,
+                'ai_response': ai_response
+                # Removed the 'doctor' field since no authentication
+            }), 200
+            
+        except Exception as process_error:
+            return jsonify({
+                'error': f'AI processing failed: {str(process_error)}',
+                'success': False
+            }), 500
+        finally:
+            loop.close()
+    
+    except Exception as e:
+        return jsonify({
+            'error': f'Chat query error: {str(e)}',
+            'success': False
+        }), 500
+
 @app.route('/patient/<int:patient_id>', methods=['GET'])
 def get_patient(patient_id):
     """
@@ -619,8 +681,8 @@ def submit_audio_for_transcription():
 
     try:
         # Get patient_id and doctor_id from form data or use defaults
-        patient_id = "1" #request.form.get('patient_id')
-        doctor_id = "1" #request.form.get('doctor_id')
+        patient_id = request.form.get('patient_id') or "1"
+        doctor_id = request.form.get('doctor_id') or "1"
         
         # Check if file is present in request
         if 'audio_file' not in request.files:
