@@ -8,3 +8,4 @@
 */.env
 .env
 venv/
+stt/__pycache__
