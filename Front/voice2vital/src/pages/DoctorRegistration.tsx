@@ -20,12 +20,22 @@ const DoctorRegistration: React.FC = () => {
 
   const update = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
-  const onSubmit = (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErr("");
 
     // Basic validation
-    if (!form.firstName || !form.lastName || !form.idNumber || !form.email || !form.password || !form.practiceNumber || !form.specialty || !form.phoneNumber || !form.hospital) {
+    if (
+      !form.firstName ||
+      !form.lastName ||
+      !form.idNumber ||
+      !form.email ||
+      !form.password ||
+      !form.practiceNumber ||
+      !form.specialty ||
+      !form.phoneNumber ||
+      !form.hospital
+    ) {
       setErr("Please fill in all required fields.");
       return;
     }
@@ -35,21 +45,48 @@ const DoctorRegistration: React.FC = () => {
       return;
     }
 
-    if (form.password.length < 6) {
-      setErr("Password must be at least 6 characters long.");
+    if (form.password.length < 8) {
+      setErr("Password must be at least 8 characters long.");
       return;
     }
 
-    // Save locally (mock). Replace with API call later.
-    localStorage.setItem("doctorProfile", JSON.stringify(form));
-    
-    // Show success message
-    setIsRegistered(true);
-    
-    // Navigate back to login after 2 seconds
-    setTimeout(() => {
-      nav("/");
-    }, 2000);
+    try {
+      const res = await fetch("http://127.0.0.1:5000/signup/doctor", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          first_name: form.firstName,
+          last_name: form.lastName,
+          id_number: form.idNumber,
+          email_address: form.email,
+          phone_number: form.phoneNumber,
+          practice_number: form.practiceNumber,
+          specialty: form.specialty,
+          hospital: form.hospital,
+          password: form.password,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setErr(data.error || "Signup failed");
+        return;
+      }
+
+      // ✅ Show success message
+      setIsRegistered(true);
+
+      // Navigate back to login after 2 seconds
+      setTimeout(() => {
+        nav("/");
+      }, 2000);
+    } catch (error) {
+      console.error(error);
+      setErr("Something went wrong. Please try again.");
+    }
   };
 
   const isMobile = window.innerWidth <= 768;
@@ -89,7 +126,7 @@ const DoctorRegistration: React.FC = () => {
             background: 'linear-gradient(90deg, #3fb6a8, #319795)',
             borderRadius: '16px 16px 0 0'
           }} />
-          
+
           <div style={{
             width: '60px',
             height: '60px',
@@ -104,7 +141,7 @@ const DoctorRegistration: React.FC = () => {
           }}>
             ✓
           </div>
-          
+
           <h2 style={{
             fontSize: '24px',
             fontWeight: '600',
@@ -113,7 +150,7 @@ const DoctorRegistration: React.FC = () => {
           }}>
             Registration Successful!
           </h2>
-          
+
           <p style={{
             color: '#718096',
             fontSize: '16px',
@@ -122,7 +159,7 @@ const DoctorRegistration: React.FC = () => {
           }}>
             Your account has been created successfully. You will be redirected to the login page shortly.
           </p>
-          
+
           <div style={{
             width: '40px',
             height: '40px',
@@ -133,7 +170,7 @@ const DoctorRegistration: React.FC = () => {
             margin: '0 auto'
           }} />
         </div>
-        
+
         <style>
           {`
             @keyframes spin {
