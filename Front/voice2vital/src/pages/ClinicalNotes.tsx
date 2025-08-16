@@ -395,8 +395,14 @@ const ClinicalNotes: React.FC = () => {
               {/* Required Fields */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <FontAwesomeIcon icon={faIdCard} style={{ color: '#3fb6a8', width: '16px' }} />
-                <span style={{ fontWeight: '600', color: '#4a5568', minWidth: '80px' }}>ID Number:</span>
+                <span style={{ fontWeight: '600', color: '#4a5568', minWidth: '80px' }}>Patient ID:</span>
                 <span style={{ color: '#2d3748' }}>{patientInfo.id}</span>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <FontAwesomeIcon icon={faIdCard} style={{ color: '#3fb6a8', width: '16px' }} />
+                <span style={{ fontWeight: '600', color: '#4a5568', minWidth: '80px' }}>ID Number:</span>
+                <span style={{ color: '#2d3748' }}>{patientInfo.id_number}</span>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -469,7 +475,7 @@ const ClinicalNotes: React.FC = () => {
               {patientInfo.primary_physician && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <FontAwesomeIcon icon={faUserMd} style={{ color: '#3fb6a8', width: '16px' }} />
-                  <span style={{ fontWeight: '600', color: '#4a5568', minWidth: '120px' }}>Primary Physician:</span>
+                  <span style={{ fontWeight: '600', color: '#4a5568', minWidth: '120px' }}>Primary Physician ID:</span>
                   <span style={{ color: '#2d3748' }}>{patientInfo.primary_physician}</span>
                 </div>
               )}
