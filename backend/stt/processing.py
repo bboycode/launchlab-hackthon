@@ -62,16 +62,31 @@ client = genai.Client()  # reads GEMINI_API_KEY from .env
 def build_prompt(transcript: str) -> str:
     """Build the Gemini extraction prompt."""
     return f"""
-You are a medical scribe. Extract structured data from the transcript and return valid JSON matching the ClinicalNote schema below.
+You are a medical scribe. Extract structured data from the transcript and return valid JSON strictly following the ClinicalNote schema.  
 
-Rules:
-1. Use only explicit information from the transcript unless a value can be logically derived.
-2. If a field is missing, set it to:
-   - "Not stated" for strings
-   - [] for lists
-3. Do not paraphrase diagnoses/medications/plans.
-4. Fill every field in the schema.
-5. Output valid JSON only.
+Instructions:
+1. Patient Information: Always include the patient's **sex** in `patient_info`.  
+   - If stated, record exactly as given.  
+   - If not stated, infer logically if possible (e.g., from pronouns or names). Otherwise, set to "Not stated".  
+
+2. Plan Section: The `plan` field must contain **clear, actionable medical suggestions**, not generic text.  
+   - Include medications with names and dosages (if mentioned).  
+   - Record diagnostic tests, referrals, or imaging orders.  
+   - Add lifestyle or home-care recommendations if stated.  
+   - Always include follow-up instructions if given.  
+
+3. Accuracy:  
+   - Preserve all clinical details exactly as stated in the transcript.  
+   - Do not paraphrase or omit diagnoses, medications, or plans.  
+
+4. Completeness:  
+   - Every field in the schema must be present.  
+   - Use `"Not stated"` for missing string fields and `[]` for missing list fields.  
+
+5. Output:  
+   - Return **only valid JSON** that conforms to the schema.  
+   - Do not include explanations, notes, or extra text outside the JSON.  
+
 
 Schema:
 - patient_info:
