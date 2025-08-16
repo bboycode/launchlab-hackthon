@@ -258,7 +258,29 @@ const Dashboard: React.FC = () => {
             overflowY: 'auto',
             overflowX: 'hidden'
           }}>
-            {patients.length === 0 ? (
+            {loading ? (
+              <div style={{
+                padding: '48px 24px',
+                textAlign: 'center',
+                color: '#718096'
+              }}>
+                <div style={{
+                  fontSize: '20px',
+                  marginBottom: '16px',
+                  opacity: 0.6
+                }}>
+                  ⏳
+                </div>
+                <h4 style={{
+                  fontSize: '16px',
+                  fontWeight: '500',
+                  margin: '0 0 8px 0',
+                  color: '#4a5568'
+                }}>
+                  Loading patients...
+                </h4>
+              </div>
+            ) : patients.length === 0 ? (
               <div style={{
                 padding: '48px 24px',
                 textAlign: 'center',
