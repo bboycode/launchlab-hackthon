@@ -26,6 +26,9 @@ CORS(app)
 def home():
     return jsonify({"message": "Flask + Supabase API is running 🚀"})
 
+
+
+
 # Token verification middleware/decorator
 def token_required(f):
     """Decorator to protect routes that require authentication"""
@@ -83,6 +86,42 @@ def token_required(f):
         return f(*args, **kwargs)
     
     return decorated
+
+@app.route('/patients', methods=['POST'])
+def create_patient():
+    """
+    Create a new patient
+    """
+    try:
+        data = request.json
+
+        # Insert into patient_table
+        result = supabase.table('patient_table').insert({
+            "first_name": data.get("first_name"),
+            "last_name": data.get("last_name"),
+            "id_number": data.get("id_number"),
+            "dob": data.get("dob"),
+            "sex": data.get("sex"),
+            "language": data.get("language"),
+            "email_address": data.get("email_address"),
+            "phone_number": data.get("phone_number"),
+            "emergency_contact_name": data.get("emergency_contact_name"),
+            "emergency_contact_phone": data.get("emergency_contact_phone"),
+            "med_aid_provider": data.get("med_aid_provider", "N/A"),
+            "med_aid_number": data.get("med_aid_number", "N/A"),
+            "primary_physician": data.get("primary_physician"),
+            "allergies": data.get("allergies", "N/A"),
+            "med_conditions": data.get("med_conditions", "N/A"),
+        }).execute()
+
+        return jsonify({
+            "success": True,
+            "patient": result.data[0]
+        }), 201
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
 
 @app.route('/doctor/<int:doctor_id>/patients', methods=['GET'])
 @token_required

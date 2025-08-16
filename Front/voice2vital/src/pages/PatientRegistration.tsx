@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { jwtDecode } from 'jwt-decode'
 
 type Patient = {
   firstName: string;
@@ -14,6 +15,7 @@ type Patient = {
   emergencyContactName: string;
   emergencyContactPhone: string;
   knownAllergies: string;
+  medConditions: string;
   primaryPhysician: string;
   preferredLanguage: string;
 };
@@ -32,6 +34,7 @@ const PatientRegistration: React.FC = () => {
     emergencyContactName: "",
     emergencyContactPhone: "",
     knownAllergies: "",
+    medConditions: "",
     primaryPhysician: "",
     preferredLanguage: "English",
   });
@@ -40,6 +43,7 @@ const PatientRegistration: React.FC = () => {
   const [saved, setSaved] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
+  const [isRegistered, setIsRegistered] = useState(false);
 
   const update = (k: keyof Patient, v: string) => setP((s) => ({ ...s, [k]: v }));
 
@@ -70,25 +74,94 @@ const PatientRegistration: React.FC = () => {
     if (formErrors.length > 0) return;
 
     setIsLoading(true);
+    let storedUser: any = null;
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    try {
+      const authUser = localStorage.getItem("authUser");
+      if (authUser) {
+        // parse localStorage first
+        const parsed = JSON.parse(authUser);
 
-    // Note: localStorage removed for Claude.ai compatibility
-    // In your actual app: 
-    // const list: Patient[] = JSON.parse(localStorage.getItem("patients") || "[]");
-    // list.push(p);
-    // localStorage.setItem("patients", JSON.stringify(list));
+        // decode the JWT token
+        const decoded: any = jwtDecode(parsed.token);
+        console.log(decoded);
 
-    setSaved(true);
-    setIsLoading(false);
+        storedUser = {
+          email: parsed.email,
+          token: parsed.token,
+          surname: decoded.last_name,
+          id: decoded.doctor_id // adjust key to match your token payload
+        };
+      }
 
-    // Auto-hide success message and navigate
-    setTimeout(() => {
-      console.log("Navigate to /dashboard");
-      nav("/dashboard")
-    }, 2000);
-    nav("/dashboard")
+
+
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+
+      // Only add Authorization header if token exists
+      if (authUser) {
+        headers.Authorization = `Bearer ${authUser}`;
+      } else {
+        console.log("BUllshit");
+
+      }
+
+      const res = await fetch("http://127.0.0.1:5000/patients", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          first_name: p.firstName,
+          last_name: p.lastName,
+          id_number: p.idNumber,
+          dob: p.dob,
+          sex: p.sex,
+          language: p.preferredLanguage,
+          email_address: p.email,
+          phone_number: p.phone,
+          emergency_contact_name: p.emergencyContactName,
+          emergency_contact_phone: p.emergencyContactPhone,
+          med_aid_provider: p.medicalAidProvider || "N/A",
+          med_aid_number: p.medicalAidNumber || "N/A",
+          primary_physician: p.primaryPhysician,
+          allergies: p.knownAllergies || "N/A",
+          med_conditions: p.medConditions || "N/A",
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        // Handle different error response formats
+        if (res.status === 401) {
+          setErrors(["Authentication required. Please log in first."]);
+        } else if (data.error) {
+          // If error is a string, convert to array
+          setErrors(Array.isArray(data.error) ? data.error : [data.error]);
+        } else {
+          setErrors(["Registration failed. Please try again."]);
+        }
+        return;
+      }
+
+      // ✅ Show success message
+      setIsRegistered(true);
+      setSaved(true);
+
+      // Navigate back to dashboard after 2 seconds
+      setTimeout(() => {
+        console.log("Navigate to /dashboard");
+        nav('/dashboard');
+        // In your actual app, replace with: nav("/dashboard");
+      }, 2000);
+
+    } catch (error) {
+      console.error('Registration error:', error);
+      setErrors(["Something went wrong. Please check your connection and try again."]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const goBack = () => {
@@ -732,8 +805,8 @@ const PatientRegistration: React.FC = () => {
 
                 <textarea
                   placeholder="Known medical conditions"
-                  value={p.knownAllergies}
-                  onChange={(e) => update("knownAllergies", e.target.value)}
+                  value={p.medConditions}
+                  onChange={(e) => update("medConditions", e.target.value)}
                   rows={3}
                   style={{
                     width: '100%',
