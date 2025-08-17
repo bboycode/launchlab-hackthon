@@ -105,21 +105,14 @@ const Dashboard: React.FC = () => {
     nav('/');
   };
 
-<<<<<<< HEAD
   // const recordSession = (patientName: string) => {
   //   console.log(`Navigate to /session for ${patientName}`);
   //   nav('/session');
   // };
-=======
   const goToChatBox = () => {
     nav('/chatbox');
   };
 
-  const recordSession = (patientName: string) => {
-    console.log(`Navigate to /session for ${patientName}`);
-    nav('/session');
-  };
->>>>>>> chat-ui
 
   const registerNewPatient = () => {
     console.log("Navigate to /patient-register");
