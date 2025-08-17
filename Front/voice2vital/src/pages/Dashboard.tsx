@@ -87,6 +87,17 @@ const Dashboard: React.FC = () => {
     fetchPatients();
   }, [user.id, user.token]);
 
+  const recordSession = (patient: any) => {
+    nav('/session', {
+      state: {
+        patient_id: patient.id,
+        patient_first_name: patient.first_name,
+        patient_last_name: patient.last_name,
+        doctor_id: user.id,
+      }
+    });
+  };
+
   const logout = () => {
     // Clear stored user data
     localStorage.removeItem("authUser");
@@ -94,10 +105,10 @@ const Dashboard: React.FC = () => {
     nav('/');
   };
 
-  const recordSession = (patientName: string) => {
-    console.log(`Navigate to /session for ${patientName}`);
-    nav('/session');
-  };
+  // const recordSession = (patientName: string) => {
+  //   console.log(`Navigate to /session for ${patientName}`);
+  //   nav('/session');
+  // };
 
   const registerNewPatient = () => {
     console.log("Navigate to /patient-register");
@@ -355,8 +366,8 @@ const Dashboard: React.FC = () => {
                     </div>
                     <button
                       onClick={(e) => {
-                        e.stopPropagation(); // Prevent triggering the parent div's click
-                        recordSession(`${patient.first_name} ${patient.last_name}`);
+                        e.stopPropagation();
+                        recordSession(patient);
                       }}
                       style={{
                         display: 'flex',

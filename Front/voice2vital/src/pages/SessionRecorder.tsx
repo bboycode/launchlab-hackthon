@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 
 const SessionRecorder: React.FC = () => {
   // Audio recording
@@ -14,6 +15,9 @@ const SessionRecorder: React.FC = () => {
 
   const recordingTimeRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+
+  const location = useLocation();
+  const { patient_id, patient_first_name , patient_last_name , doctor_id} = location.state || {};
   
   const handleFileUpload = async () => {
     // Create a file input element
@@ -24,7 +28,7 @@ const SessionRecorder: React.FC = () => {
     input.onchange = async (event) => {
       const file = (event.target as HTMLInputElement).files?.[0];
       if (file) {
-        await uploadAudioFile(file);
+        await uploadAudioFile(file, patient_id, doctor_id);
       }
     };
     
@@ -32,13 +36,16 @@ const SessionRecorder: React.FC = () => {
     input.click();
   };
 
-  const uploadAudioFile = async (file: File) => {
+  const uploadAudioFile = async (file: File, patient_id: string, doctor_id: string) => {
     try {
       // Show loading state
       setIsProcessing(true);
       
       const formData = new FormData();
       formData.append('audio_file', file);
+      formData.append('patient_id', patient_id);
+      formData.append('doctor_id', doctor_id);
+      console.log("Uploading for patient:", patient_id, "doctor:", doctor_id);
       
       const response = await fetch('http://localhost:5000/transcribe/audio', {
         method: 'POST',
