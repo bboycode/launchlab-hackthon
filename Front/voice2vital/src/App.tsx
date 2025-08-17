@@ -5,6 +5,7 @@ import PatientRegistration from "./pages/PatientRegistration";
 import Dashboard from "./pages/Dashboard";
 import SessionRecorder from "./pages/SessionRecorder";
 import ClinicalNotes from "./pages/ClinicalNotes";
+import ChatBox from "./pages/chatbot";
 import "./App.css";
 
 export default function App() {
@@ -26,6 +27,7 @@ export default function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/session" element={<SessionRecorder />} />
         <Route path="/clinical-notes/:patientId" element={<ClinicalNotes />} />
+        <Route path="/chatbox" element={<ChatBox />} />
       </Routes>
     </BrowserRouter>
   );

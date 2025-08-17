@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faMicrophone } from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft, faMicrophone, faRobot } from '@fortawesome/free-solid-svg-icons';
 import { useNavigate, useLocation } from "react-router-dom";
 import { jwtDecode } from 'jwt-decode'
 
@@ -105,10 +105,21 @@ const Dashboard: React.FC = () => {
     nav('/');
   };
 
+<<<<<<< HEAD
   // const recordSession = (patientName: string) => {
   //   console.log(`Navigate to /session for ${patientName}`);
   //   nav('/session');
   // };
+=======
+  const goToChatBox = () => {
+    nav('/chatbox');
+  };
+
+  const recordSession = (patientName: string) => {
+    console.log(`Navigate to /session for ${patientName}`);
+    nav('/session');
+  };
+>>>>>>> chat-ui
 
   const registerNewPatient = () => {
     console.log("Navigate to /patient-register");
@@ -164,31 +175,62 @@ const Dashboard: React.FC = () => {
               From doctor-patient conversations to organized clinical notes.
             </p>
           </div>
-          <button
-            onClick={logout}
-            style={{
-              padding: isMobile ? '8px 16px' : '10px 20px',
-              fontSize: isMobile ? '13px' : '14px',
-              fontWeight: '600',
-              border: '1px solid #e2e8f0',
-              borderRadius: '8px',
-              background: 'white',
-              color: '#4a5568',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              fontFamily: 'inherit'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = '#3fb6a8';
-              e.currentTarget.style.color = '#3fb6a8';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = '#e2e8f0';
-              e.currentTarget.style.color = '#4a5568';
-            }}
-          >
-            Logout
-          </button>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <button
+              onClick={goToChatBox}
+              style={{
+                padding: isMobile ? '8px 16px' : '10px 20px',
+                fontSize: isMobile ? '13px' : '14px',
+                fontWeight: '600',
+                border: '1px solid #3fb6a8',
+                borderRadius: '8px',
+                background: 'white',
+                color: '#3fb6a8',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                fontFamily: 'inherit',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#3fb6a8';
+                e.currentTarget.style.color = 'white';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'white';
+                e.currentTarget.style.color = '#3fb6a8';
+              }}
+            >
+              <FontAwesomeIcon icon={faRobot} size="sm" />
+              Mr Vital
+            </button>
+            <button
+              onClick={logout}
+              style={{
+                padding: isMobile ? '8px 16px' : '10px 20px',
+                fontSize: isMobile ? '13px' : '14px',
+                fontWeight: '600',
+                border: '1px solid #e2e8f0',
+                borderRadius: '8px',
+                background: 'white',
+                color: '#4a5568',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                fontFamily: 'inherit'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = '#3fb6a8';
+                e.currentTarget.style.color = '#3fb6a8';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = '#e2e8f0';
+                e.currentTarget.style.color = '#4a5568';
+              }}
+            >
+              Logout
+            </button>
+          </div>
         </div>
       </div>
 
