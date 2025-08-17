@@ -1,8 +1,9 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowLeft, faCalendarAlt, faUser, faIdCard, faLanguage, faEnvelope, faPhone, faUserMd, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft, faCalendarAlt, faUser, faIdCard, faLanguage, faEnvelope, faPhone, faUserMd, faExclamationTriangle, faEdit, faEye } from '@fortawesome/free-solid-svg-icons';
 import { jwtDecode } from 'jwt-decode';
+import ReactMarkdown from 'react-markdown';
 
 // Define interfaces for type safety
 interface PatientInfo {
@@ -30,6 +31,171 @@ interface ClinicalNote {
   created_at: string;
   doctor_id: number;
 }
+
+// Function to convert JSON clinical note to markdown
+const jsonToMarkdown = (jsonString: string): string => {
+  try {
+    const data = JSON.parse(jsonString);
+    let markdown = "";
+
+    // Patient Information
+    if (data.patient_info) {
+      markdown += "# Patient Information\n\n";
+      Object.entries(data.patient_info).forEach(([key, value]) => {
+        if (value && value !== "Not stated") {
+          markdown += `**${key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:** ${value}\n\n`;
+        }
+      });
+    }
+
+    // History of Present Illness
+    if (data.history_of_present_illness) {
+      markdown += "# History of Present Illness\n\n";
+      markdown += `${data.history_of_present_illness}\n\n`;
+    }
+
+    // Allergies
+    if (data.allergies && data.allergies.length > 0) {
+      markdown += "# Allergies\n\n";
+      data.allergies.forEach((allergy: string) => {
+        markdown += `- ${allergy}\n`;
+      });
+      markdown += "\n";
+    }
+
+    // Medications
+    if (data.medications && data.medications.length > 0) {
+      markdown += "# Current Medications\n\n";
+      data.medications.forEach((medication: string) => {
+        markdown += `- ${medication}\n`;
+      });
+      markdown += "\n";
+    }
+
+    // Previous History
+    if (data.previous_history) {
+      markdown += "# Previous History\n\n";
+      
+      if (data.previous_history.past_medical_history && data.previous_history.past_medical_history.length > 0) {
+        markdown += "## Past Medical History\n";
+        data.previous_history.past_medical_history.forEach((history: string) => {
+          markdown += `- ${history}\n`;
+        });
+        markdown += "\n";
+      }
+
+      if (data.previous_history.past_surgical_history && data.previous_history.past_surgical_history.length > 0) {
+        markdown += "## Past Surgical History\n";
+        data.previous_history.past_surgical_history.forEach((surgery: string) => {
+          markdown += `- ${surgery}\n`;
+        });
+        markdown += "\n";
+      }
+
+      if (data.previous_history.family_history && data.previous_history.family_history.length > 0) {
+        markdown += "## Family History\n";
+        data.previous_history.family_history.forEach((family: string) => {
+          markdown += `- ${family}\n`;
+        });
+        markdown += "\n";
+      }
+
+      if (data.previous_history.social_history) {
+        markdown += "## Social History\n";
+        markdown += `${data.previous_history.social_history}\n\n`;
+      }
+    }
+
+    // Review of Systems
+    if (data.review_of_systems) {
+      markdown += "# Review of Systems\n\n";
+      
+      if (data.review_of_systems.positive_findings && data.review_of_systems.positive_findings.length > 0) {
+        markdown += "## Positive Findings\n";
+        data.review_of_systems.positive_findings.forEach((finding: string) => {
+          markdown += `- ${finding}\n`;
+        });
+        markdown += "\n";
+      }
+
+      if (data.review_of_systems.negative_findings && data.review_of_systems.negative_findings.length > 0) {
+        markdown += "## Negative Findings\n";
+        data.review_of_systems.negative_findings.forEach((finding: string) => {
+          markdown += `- ${finding}\n`;
+        });
+        markdown += "\n";
+      }
+    }
+
+    // Physical Exam
+    if (data.physical_exam) {
+      markdown += "# Physical Examination\n\n";
+      
+      if (data.physical_exam.general_appearance && data.physical_exam.general_appearance !== "Not stated") {
+        markdown += `**General Appearance:** ${data.physical_exam.general_appearance}\n\n`;
+      }
+
+      if (data.physical_exam.vital_signs) {
+        markdown += "## Vital Signs\n";
+        Object.entries(data.physical_exam.vital_signs).forEach(([key, value]) => {
+          if (value && value !== "Not stated") {
+            markdown += `**${key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:** ${value}\n\n`;
+          }
+        });
+      }
+
+      if (data.physical_exam.examination_findings) {
+        markdown += "## Examination Findings\n";
+        markdown += `${data.physical_exam.examination_findings}\n\n`;
+      }
+    }
+
+    // Assessment
+    if (data.assessment) {
+      markdown += "# Assessment\n\n";
+      markdown += `${data.assessment}\n\n`;
+    }
+
+    // ICD-10 Codes
+    if (data.icd10_codes && data.icd10_codes.length > 0) {
+      markdown += "# ICD-10 Codes\n\n";
+      data.icd10_codes.forEach((code: string) => {
+        markdown += `- ${code}\n`;
+      });
+      markdown += "\n";
+    }
+
+    // Plan
+    if (data.plan && data.plan.length > 0) {
+      markdown += "# Treatment Plan\n\n";
+      data.plan.forEach((item: string, index: number) => {
+        markdown += `${index + 1}. ${item}\n`;
+      });
+      markdown += "\n";
+    }
+
+    // Medical Decision Making
+    if (data.medical_decision_making) {
+      markdown += "# Medical Decision Making\n\n";
+      markdown += `${data.medical_decision_making}\n\n`;
+    }
+
+    return markdown;
+  } catch (error) {
+    console.error("Error parsing JSON to markdown:", error);
+    return jsonString; // Return original if parsing fails
+  }
+};
+
+// Function to check if a string is valid JSON
+const isValidJSON = (str: string): boolean => {
+  try {
+    JSON.parse(str);
+    return true;
+  } catch {
+    return false;
+  }
+};
 
 const ClinicalNotes: React.FC = () => {
   const nav = useNavigate();
@@ -68,6 +234,7 @@ const ClinicalNotes: React.FC = () => {
   const [clinicalNotes, setClinicalNotes] = useState<ClinicalNote[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [editingNotes, setEditingNotes] = useState<{ [key: number]: boolean }>({});
 
   // Fetch patient info and notes from backend
   useEffect(() => {
@@ -542,7 +709,6 @@ const ClinicalNotes: React.FC = () => {
                       borderRadius: '8px',
                       padding: isMobile ? '20px' : '24px',
                       background: index % 2 === 0 ? '#fafafa' : 'white',
-                      fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
                       fontSize: '14px',
                       lineHeight: '1.6'
                     }}
@@ -573,63 +739,180 @@ const ClinicalNotes: React.FC = () => {
                           Created at: {new Date(note.created_at).toLocaleString()}
                         </p>
                       </div>
-                      <div style={{
-                        fontSize: '12px',
-                        color: '#718096',
-                        textAlign: 'right'
-                      }}>
-                        Doctor ID: {note.doctor_id}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <button
+                          onClick={() => setEditingNotes(prev => ({ ...prev, [note.id]: !prev[note.id] }))}
+                          style={{
+                            padding: '6px 12px',
+                            fontSize: '12px',
+                            fontWeight: '500',
+                            border: '1px solid #3fb6a8',
+                            borderRadius: '6px',
+                            background: editingNotes[note.id] ? '#3fb6a8' : 'white',
+                            color: editingNotes[note.id] ? 'white' : '#3fb6a8',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
+                        >
+                          <FontAwesomeIcon icon={editingNotes[note.id] ? faEye : faEdit} size="sm" />
+                          {editingNotes[note.id] ? 'View' : 'Edit'}
+                        </button>
+                        <div style={{
+                          fontSize: '12px',
+                          color: '#718096',
+                          textAlign: 'right'
+                        }}>
+                          Doctor ID: {note.doctor_id}
+                        </div>
                       </div>
                     </div>
 
                     {/* Note Content */}
-                    <textarea
-                      value={note.note}
-                      onChange={(e) => {
-                        // Update the specific note in the state
-                        const updatedNotes = clinicalNotes.map(n =>
-                          n.id === note.id ? { ...n, note: e.target.value } : n
-                        );
-                        setClinicalNotes(updatedNotes);
-                      }}
-                      style={{
-                        width: '100%',
-                        minHeight: 'auto',
+                    {editingNotes[note.id] ? (
+                      // Edit Mode - Raw textarea
+                      <textarea
+                        value={note.note}
+                        onChange={(e) => {
+                          const updatedNotes = clinicalNotes.map(n =>
+                            n.id === note.id ? { ...n, note: e.target.value } : n
+                          );
+                          setClinicalNotes(updatedNotes);
+                        }}
+                        style={{
+                          width: '100%',
+                          minHeight: '400px',
+                          background: 'white',
+                          padding: '16px',
+                          borderRadius: '6px',
+                          border: '1px solid #e2e8f0',
+                          fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                          fontSize: '14px',
+                          lineHeight: '1.6',
+                          color: '#2d3748',
+                          resize: 'vertical',
+                          outline: 'none',
+                          boxSizing: 'border-box'
+                        }}
+                        onFocus={(e) => {
+                          e.currentTarget.style.borderColor = '#3fb6a8';
+                          e.currentTarget.style.boxShadow = '0 0 0 3px rgba(63, 182, 168, 0.1)';
+                        }}
+                        onBlur={(e) => {
+                          e.currentTarget.style.borderColor = '#e2e8f0';
+                          e.currentTarget.style.boxShadow = 'none';
+                        }}
+                      />
+                    ) : (
+                      // View Mode - Formatted markdown
+                      <div style={{
                         background: 'white',
                         padding: '16px',
                         borderRadius: '6px',
                         border: '1px solid #e2e8f0',
-                        fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
-                        fontSize: '14px',
-                        lineHeight: '1.6',
-                        color: '#2d3748',
-                        resize: 'none',
-                        overflow: 'hidden',
-                        outline: 'none',
-                        boxSizing: 'border-box'
-                      }}
-                      ref={(textarea) => {
-                        if (textarea) {
-                          // Auto-resize on mount and content change
-                          textarea.style.height = 'auto';
-                          textarea.style.height = textarea.scrollHeight + 'px';
-                        }
-                      }}
-                      onInput={(e) => {
-                        // Auto-resize textarea to fit content
-                        const textarea = e.target as HTMLTextAreaElement;
-                        textarea.style.height = 'auto';
-                        textarea.style.height = textarea.scrollHeight + 'px';
-                      }}
-                      onFocus={(e) => {
-                        e.currentTarget.style.borderColor = '#3fb6a8';
-                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(63, 182, 168, 0.1)';
-                      }}
-                      onBlur={(e) => {
-                        e.currentTarget.style.borderColor = '#e2e8f0';
-                        e.currentTarget.style.boxShadow = 'none';
-                      }}
-                    />
+                        minHeight: '200px'
+                      }}>
+                        {isValidJSON(note.note) ? (
+                          // If it's valid JSON, convert to markdown and render
+                          <div style={{
+                            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                            lineHeight: '1.6',
+                            color: '#2d3748'
+                          }}>
+                            <ReactMarkdown
+                              components={{
+                                h1: ({ children }) => (
+                                  <h1 style={{
+                                    fontSize: '20px',
+                                    fontWeight: '600',
+                                    color: '#2d3748',
+                                    margin: '24px 0 12px 0',
+                                    padding: '0 0 8px 0',
+                                    borderBottom: '2px solid #3fb6a8'
+                                  }}>
+                                    {children}
+                                  </h1>
+                                ),
+                                h2: ({ children }) => (
+                                  <h2 style={{
+                                    fontSize: '18px',
+                                    fontWeight: '600',
+                                    color: '#2d3748',
+                                    margin: '20px 0 10px 0'
+                                  }}>
+                                    {children}
+                                  </h2>
+                                ),
+                                h3: ({ children }) => (
+                                  <h3 style={{
+                                    fontSize: '16px',
+                                    fontWeight: '600',
+                                    color: '#2d3748',
+                                    margin: '16px 0 8px 0'
+                                  }}>
+                                    {children}
+                                  </h3>
+                                ),
+                                p: ({ children }) => (
+                                  <p style={{
+                                    margin: '0 0 12px 0',
+                                    lineHeight: '1.6'
+                                  }}>
+                                    {children}
+                                  </p>
+                                ),
+                                ul: ({ children }) => (
+                                  <ul style={{
+                                    margin: '0 0 12px 0',
+                                    paddingLeft: '20px'
+                                  }}>
+                                    {children}
+                                  </ul>
+                                ),
+                                ol: ({ children }) => (
+                                  <ol style={{
+                                    margin: '0 0 12px 0',
+                                    paddingLeft: '20px'
+                                  }}>
+                                    {children}
+                                  </ol>
+                                ),
+                                li: ({ children }) => (
+                                  <li style={{
+                                    margin: '4px 0'
+                                  }}>
+                                    {children}
+                                  </li>
+                                ),
+                                strong: ({ children }) => (
+                                  <strong style={{
+                                    fontWeight: '600',
+                                    color: '#3fb6a8'
+                                  }}>
+                                    {children}
+                                  </strong>
+                                )
+                              }}
+                            >
+                              {jsonToMarkdown(note.note)}
+                            </ReactMarkdown>
+                          </div>
+                        ) : (
+                          // If it's not JSON, display as plain text with basic formatting
+                          <div style={{
+                            fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                            fontSize: '14px',
+                            lineHeight: '1.6',
+                            color: '#2d3748',
+                            whiteSpace: 'pre-wrap'
+                          }}>
+                            {note.note}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
